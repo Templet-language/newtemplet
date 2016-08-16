@@ -1,0 +1,46 @@
+Changes from Templet C++11 runtime 1.4.1 TO the Templet experimental runtime
+============================================================================
+* the design is focused on coupling the SDK with the interactive domain-specific language 
+* the runtime code was refactored and placed in single file 'template.hpp'
+* now you can manually stop your application by the 'stop()' command
+* simulation code was optimized
+* distributed MPI-based execution for static algorithms was added
+  now you can use 5 execution modes: debugging, sequential exec, performance simulation exec, parallel shared memory exec, parallel distributed memory exec  
+
+
+Changes from Templet C++11 runtime 1.4.0 TO 1.4.1
+===============++================================
+
+* demo mode support (with the key -d) added : code is compileble but not executable
+* GitHub release under the Apache License 2.0 was prepared
+ 
+Older versions
+==============
+OldReleases -- prior to 28.02.2011
+17.03.2011          TempletSDKv1041
+02.04.2011          TempletSDKv1042
+14.05.2011          TempletSDKv106
+17.05.2011          TempletSDKv1061
+18.05.2011          TempletSDKv107
+18.05.2011          TempletSDKv108
+07.07.2011          TempletSDKv109
+19.10.2011          TempletSDKv110
+21.10.2011          TempletSDKv111
+23.10.2011          TempletSDKv112
+01.11.2011          TempletSDKv113
+17.11.2011          TempletSDKv114
+05.02.2012          TempletSDKv115
+13.02.2012          TempletSDKv1151
+03.03.2012          TempetSDK116
+20.03.2012          TempletSDK1163
+30.03.2012          TempletSDKv117
+03.04.2012          TempletSDKv1171
+20.08.2012          TempletSDKv105
+20.08.2012          TempletSDKv104
+20.08.2012          TempletSDKv1_2_0
+05.08.2013          TempletSDKv1_3_0
+20.01.2014          TempletReferenceImplementation
+15.03.2014          TempletSDKv1_3_2
+22.03.2014          TempletSDKv1_3_3
+05.07.2014          TempletSDKv1_3_661
+16.01.2015			TempletSDKv1_4_0	

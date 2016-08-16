@@ -1,0 +1,7 @@
+Installation steps
+------------------
+
+Actually this package does not require installation now. Just copy the content to some location and open Visual Studio project files:
+* newtemplet/src/tridentity/vs2013/vs2013.sln -- sin^2(x)+cos^2(x)=1 an example (from the [article](http://arxiv.org/abs/1412.0981) )
+* newtemplet/skel/vs2013/vs2013.sln -- skeleton processor
+
