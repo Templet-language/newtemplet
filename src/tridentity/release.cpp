@@ -53,7 +53,7 @@ public:
 	}
 
 	double x;
-	enum { COS2, SIN2 } task;
+	enum {COS2,SIN2} task;
 
 	enum { CLI, SRV } where;
 	actor* _srv;
@@ -109,7 +109,7 @@ public:
 	}
 
 	void save(saver*s){
-		::save(s, &x, sizeof(x)); 
+		::save(s, &x, sizeof(x));
 	}
 
 	void restore(restorer*r){
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
 	std::cout << "sin^2(" << x << ")+cos^2(" << x << ")=" << _master.x << '\n';
 
 	double T1, Tp, Smax, Sp;
-	int Pmax, P=5;
+	int Pmax, P = 5;
 
 	if (TEMPLET::stat(&_my_engine, &T1, &Tp, &Pmax, &Smax, P, &Sp)){
 		std::cout << "T1 = " << T1 << ", Tp = " << Tp << ", Pmax = " << Pmax << ", Smax = " << Smax << ", P = " << P << ", Sp = " << Sp;

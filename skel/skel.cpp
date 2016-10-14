@@ -104,6 +104,7 @@ int main(int argc, char* argv[])
 			<< " -o -O <output file name> -- assumed to be the same as an input, if not defined" << endl
 			<< " -r -R -- use no markup in realease version of the output file" << endl
 			<< " -b -B -- place blocks that have no pair in the skeleton into the bottom of output file" << endl
+			<< "          assumed to be ON, if input and output is the same file" << endl
 			<< " -h -H -- print this screen" << endl;
 
 	}
@@ -136,6 +137,13 @@ int main(int argc, char* argv[])
 				break;
 			case LMARK:
 				read_block = false;
+				{
+					map<string, Block>::const_iterator it = block_map.find(key);
+					if (it != block_map.end()){
+						cout << "ERROR: the key '"<<key<<"' is not unique: input file '" << infile << "' at line #" << count;
+						return 1;
+					}
+				}
 				block_map[key] = block;
 				block.clear();
 				break;
