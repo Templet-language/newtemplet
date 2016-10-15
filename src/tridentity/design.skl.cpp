@@ -22,13 +22,13 @@ public:
 	void save(saver*s){
 /*$TET$value_message$$save*/
 	// TODO: define serialization code here
-	// with ::save(data, &data, sizeof(data)); calls
+	// with ::save(s, &data, sizeof(data)); calls
 /*$TET$*/
 	}			
 	void restore(restorer*r){
 /*$TET$value_message$$restore*/
 	// TODO: define deserialization code here
-	// with ::restore(data, &data, sizeof(data)); calls
+	// with ::restore(r, &data, sizeof(data)); calls
 /*$TET$*/
 	}
 };
@@ -66,13 +66,13 @@ public:
 	void save(saver*s){
 /*$TET$master$$save*/
 	// TODO: define serialization code here
-	// with ::save(data, &data, sizeof(data)); calls
+	// with ::save(s, &data, sizeof(data)); calls
 /*$TET$*/
 	}
 	void restore(restorer*r){
 /*$TET$master$$restore*/
 	// TODO: define deserialization code here
-	// with ::restore(data, &data, sizeof(data)); calls
+	// with ::restore(r, &data, sizeof(data)); calls
 /*$TET$*/
 	}
 
