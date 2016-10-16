@@ -6,7 +6,7 @@
 
 using namespace TEMPLET;
 
-class task{
+struct task{
 	void save(saver*s){
 /*$TET$task$save*/
 	// TODO: define serialization code here
@@ -24,7 +24,7 @@ class task{
 /*$TET$*/
 };
 
-class result{
+struct result{
 	void save(saver*s){
 /*$TET$result$save*/
 	// TODO: define serialization code here
@@ -42,10 +42,10 @@ class result{
 /*$TET$*/
 };
 
-class bag{
-public:
+struct bag{
 	bag(int argc, char *argv[]);
 	void run();
+	void delay(double);
 	bool get(task*t){
 /*$TET$bag$get*/
 	// TODO: define getting a task from the the bag code (if return false -- no task have got) 
@@ -56,10 +56,26 @@ public:
 	// TODO: define putting result to the bag code
 /*$TET$*/	
 	}
+	void save(saver*s){
+/*$TET$bag$save*/
+	// TODO: define serialization code here
+	// with ::save(s, &data, sizeof(data)); calls
+	// to copy a part of the master process state to all worker processes
+/*$TET$*/
+	}
+	void restore(restorer*r){
+/*$TET$bag$restore*/
+	// TODO: define deserialization code here
+	// with ::restore(r, &data, sizeof(data)); calls
+	// to copy a part of the master process state to all worker processes
+/*$TET$*/
+	}
 /*$TET$bag$data*/
 	// TODO: define bag data here
 /*$TET$*/	
 };
+
+void delay(double);
 
 void proc(task*t,result*r)
 {
@@ -72,7 +88,7 @@ void proc(task*t,result*r)
 	// TODO: define you program entry point
 	// int main(int argc, char *argv[])
 	// including
-	// 1) creating the bag bject
+	// 1) creating the bag object
 	// 2) input code
 	// 3) run with bag.run()
 	// 4) output code

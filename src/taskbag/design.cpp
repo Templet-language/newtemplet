@@ -22,39 +22,42 @@
 
 const int P=10;//число рабочих процессов (используется только в TEMPLET::stat)
 const int N=10;
-double a[N][N],b[N][N],c[N][N];
-	
+double A[N][N],B[N][N],C[N][N];
+
+using namespace std;
 /*$TET$*/
 
 using namespace TEMPLET;
 
-class task{
+struct task{
 	void save(saver*s){
 /*$TET$task$save*/
-	::save(s, &num, sizeof(num));
+	::save(s, &num, sizeof(num)); // строка num матрицы A
+	::save(s, &A[num], sizeof(double)*N);
 /*$TET$*/
 	}			
 	void restore(restorer*r){
 /*$TET$task$restore*/
-	::restore(r, &num, sizeof(num));
+	::restore(r, &num, sizeof(num)); // строка num матрицы A
+	::restore(r, &A[num], sizeof(double)*N);
 /*$TET$*/
 	}
 /*$TET$task$data*/
-	int num;// номер вычисляемой строки матрицы c
+	int num;// номер вычисляемой строки матрицы C
 /*$TET$*/
 };
 
-class result{
+struct result{
 	void save(saver*s){
 /*$TET$result$save*/
 	::save(s, &num, sizeof(num)); // строка num 
-	::save(s, &c[num], sizeof(double)*N); // матрицы c
+	::save(s, &C[num], sizeof(double)*N); // матрицы C
 /*$TET$*/
 	}			
 	void restore(restorer*r){
 /*$TET$result$restore*/
 	::restore(r, &num, sizeof(num)); // строка num 
-	::restore(r, &c[num], sizeof(double)*N); // матрицы c
+	::restore(r, &C[num], sizeof(double)*N); // матрицы C
 /*$TET$*/
 	}
 /*$TET$result$data*/
@@ -62,14 +65,14 @@ class result{
 /*$TET$*/
 };
 
-class bag{
-public:
+struct bag{
 	bag(int argc, char *argv[]){
 /*$TET$bag$init*/
 		cur = 0;
 /*$TET$*/
 	}
 	void run();
+	void delay(double);
 	bool get(task*t){
 /*$TET$bag$get*/
 		if(cur<N){ t->num=cur++; return true;}
@@ -80,18 +83,30 @@ public:
 /*$TET$bag$put*/
 /*$TET$*/	
 	}
+	void save(saver*s){
+/*$TET$bag$save*/
+		::save(s, &B, sizeof(double)*N*N); // матрица B
+/*$TET$*/
+	}
+	void restore(restorer*r){
+/*$TET$bag$restore*/
+		::restore(r, &B, sizeof(double)*N*N); // матрица B 
+/*$TET$*/
+	}
 /*$TET$bag$data*/
 	int cur;//номер текущей строки в матрице С
 /*$TET$*/	
 };
+
+void delay(double);
 
 void proc(task*t,result*r)
 {
 /*$TET$result$data*/
 	int i=r->num=t->num;
 	for(int j=0;j<N;j++){// параллельное вычисление строки матрицы C
-		c[i][j]=0.0;
-		for(int k=0;k<N;k++)c[i][j]+=a[i][k]*b[k][j];
+		C[i][j]=0.0;
+		for(int k=0;k<N;k++)C[i][j]+=A[i][k]*B[k][j];
 	}
 /*$TET$*/
 }
@@ -103,10 +118,10 @@ int main(int argc, char* argv[])
 	
 	// инициализация
 	for(int i=0;i<N;i++)
-		for(int j=0;j<N;j++)a[i][j]=N*i+j;
+		for(int j=0;j<N;j++)A[i][j]=N*i+j;
 
 	for(int i=0;i<N;i++)
-		for(int j=0;j<N;j++)b[i][j]=N*i+j;
+		for(int j=0;j<N;j++)B[i][j]=N*i+j;
 
 	// параллельное умножение матриц
 	b.run();
@@ -117,28 +132,26 @@ int main(int argc, char* argv[])
 	if (TEMPLET::stat(&b, &T1, &Tp, &Pmax, &Smax, P, &Sp)){
 		std::cout << "T1 = " << T1 << ", Tp = " << Tp << ", Pmax = " << Pmax << ", Smax = " << Smax << ", P = " << P << ", Sp = " << Sp;
 	}
-		
-	cout<<"\nduration = "<<bag.duration()<< " sec\n";
 
 	// вывод результата параллельного умножения
 	// отключить для больших N
 	cout<<"\nC(parallel)=\n";
 	for(int i=0;i<N;i++){
 		for(int j=0;j<N;j++){
-			cout<<c[i][j]<<" ";
+			cout<<C[i][j]<<" ";
 		}
 		cout<<'\n';
 	}
 
 	// очистка матрицы С
 	for(int i=0;i<N;i++)
-	for(int j=0;j<N;j++) c[i][j]=0.0;
+	for(int j=0;j<N;j++) C[i][j]=0.0;
 	
 	// последовательное умножение матриц
 	for(int i=0;i<N;i++){
 		for(int j=0;j<N;j++){
-			c[i][j]=0.0;
-			for(int k=0;k<N;k++)c[i][j]+=a[i][k]*b[k][j];
+			C[i][j]=0.0;
+			for(int k=0;k<N;k++)C[i][j]+=A[i][k]*B[k][j];
 		}
 	}
 
@@ -147,7 +160,7 @@ int main(int argc, char* argv[])
 	cout<<"\nC(serial)=\n";
 	for(int i=0;i<N;i++){
 		for(int j=0;j<N;j++){
-			cout<<c[i][j]<<" ";
+			cout<<C[i][j]<<" ";
 		}
 		cout<<'\n';
 	}
