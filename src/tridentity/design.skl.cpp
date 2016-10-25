@@ -1,4 +1,4 @@
-/*$TET$$header*/
+/*$TET$header*/
 	// TODO: place additional headers and other stuff here
 	// #include <templet.hpp> often needed
 /*$TET$*/
@@ -99,7 +99,7 @@ public:
 	void delay(double);
 };
 
-/*$TET$templet$footer*/
+/*$TET$footer*/
 	// TODO: define you program entry point
 	// int main(int argc, char *argv[])
 	// including

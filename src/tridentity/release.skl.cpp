@@ -1,4 +1,4 @@
-/*$TET$$header*/
+/*$TET$header*/
 /*$TET$*/
 
 using namespace TEMPLET;
@@ -150,5 +150,5 @@ public:
 	}
 };
 
-/*$TET$templet$footer*/
+/*$TET$footer*/
 /*$TET$*/

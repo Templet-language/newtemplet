@@ -1,4 +1,4 @@
-/*$TET$$header*/
+/*$TET$header*/
 /*--------------------------------------------------------------------------*/
 /*  Copyright 2016 Sergei Vostokin                                          */
 /*                                                                          */
@@ -126,7 +126,7 @@ public:
 	void delay(double);
 };
 
-/*$TET$templet$footer*/
+/*$TET$footer*/
 int main(int argc, char *argv[])
 {
 	my_engine _my_engine(argc,argv);
