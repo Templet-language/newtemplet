@@ -16,193 +16,136 @@
 #include <iostream>
 #include <templet.hpp>
 
+// параллельное умножение матриц
+// с использованием портфеля задач
+
+const int P = 10;//число рабочих процессов (используется только в TEMPLET::stat)
+const int N = 10;
+double A[N][N], B[N][N], C[N][N];
+
+using namespace std;
+
 using namespace TEMPLET;
 
-class my_engine : public engine{
-public:
-	my_engine(int argc, char *argv[]){
-		::init(this,argc,argv);
-	}
-	void run(){ ::run(this); }
-	void map(){ ::map(this); }
-};
-
-class value_message :  public message{
-public:
-	value_message(actor*a, engine*e,int t) : where(CLI), _cli(a), client_id(t){
-		::init(this, e, save_adapter, restore_adapter);
-	}
-
-	bool access(){
-		bool ret;
-		if (where == CLI) ret=::access(this, _cli);
-		else if (where == SRV) ret=::access(this, _srv);
-		return ret;
-	}
-
-	void send(){
-		if (where == CLI){ ::send(this, _srv, server_id); where = SRV; }
-		else if (where == SRV){ ::send(this, _cli, client_id); where = CLI; }
-	}
-
+// состояние задачи
+struct task{
+// сохранение задачи перед отправкой рабочему процессу
 	void save(saver*s){
-		::save(s, &x, sizeof(x));
+		::save(s, &num, sizeof(num)); // строка num матрицы A
+		::save(s, &A[num], sizeof(double)*N);
 	}
+// восстановление состояния задачи на рабочем процессе
 	void restore(restorer*r){
-		::restore(r, &x, sizeof(x)); 
+		::restore(r, &num, sizeof(num)); // строка num матрицы A
+		::restore(r, &A[num], sizeof(double)*N);
 	}
-
-	double x;
-	enum {COS2,SIN2} task;
-
-	enum { CLI, SRV } where;
-	actor* _srv;
-	actor* _cli;
-	int client_id;
-	int server_id;
-
-	friend void save_adapter(message*m, saver*s){
-		((value_message*)m)->save(s);
-	}
-	friend void restore_adapter(message*m, restorer*r){
-		((value_message*)m)->restore(r);
-	}
+	int num;// номер вычисляемой строки матрицы C
 };
 
-class master : public actor{
-public:
-	enum{ PORT_sin2=1, PORT_cos2=2, START=3 };
-
-	master(my_engine&e) : _cos2(this,&e,PORT_cos2), _sin2(this,&e,PORT_sin2){
-		::init(this, &e, recv_master, save_adapter, restore_adapter);
-				
-		::init(&_start, &e);
-		::send(&_start, this, START);
-	}
-
-	value_message& sin2_port(){  return _sin2; }
-	value_message& cos2_port(){  return _cos2; }
-
-	void at(int _at){ ::at(this,_at); }
-	void delay(double t){ ::delay(this, t); }
-	void stop(){ ::stop(this); }
-
-	void start(){
-		_cos2.x = _sin2.x = x;
-		_cos2.task = value_message::COS2;
-		_sin2.task = value_message::SIN2;
-		_cos2.send(); _sin2.send();
-	}
-
-	void sin2_func(value_message&m){
-		if (_cos2.access()){
-			x = _cos2.x + _sin2.x; delay(1.0);
-			stop();
-		}
-	}
-
-	void cos2_func(value_message&m){
-		if (_sin2.access()){
-			x = _cos2.x + _sin2.x; delay(1.0);
-			stop();
-		}
-	}
-
+// результат выполнения задачи
+struct result{
+// сохранение результата перед отправкой управляющему процессу
 	void save(saver*s){
-		::save(s, &x, sizeof(x));
+		::save(s, &num, sizeof(num)); // строка num 
+		::save(s, &C[num], sizeof(double)*N); // матрицы C
 	}
-
+// восстановление результата на управляющем процессе
 	void restore(restorer*r){
-		::restore(r, &x, sizeof(x)); 
+		::restore(r, &num, sizeof(num)); // строка num 
+		::restore(r, &C[num], sizeof(double)*N); // матрицы C
 	}
-
-	value_message _cos2;
-	value_message _sin2;
-
-	double x;
-
-	message _start;
-
-	friend void recv_master (actor*a, message*m,int tag){
-		master* th = (master*)a;
-		if (tag == PORT_cos2) th->cos2_func(*((value_message*)m));
-		else if (tag == PORT_sin2) th->sin2_func(*((value_message*)m));
-		else if (tag == START) th->start();
-	}
-
-	friend void save_adapter(actor*a, saver*s){
-		((value_message*)a)->save(s);
-	}
-
-	friend void restore_adapter(actor*a, restorer*r){
-		((value_message*)a)->restore(r);
-	}
-	
+	int num; // номер вычисленной строки матрицы c
 };
 
-class worker: public actor{
-public:
-	enum{PORT_master=1};
-
-	worker(my_engine&e){
-		::init(this, &e, recv_worker);
+// состояние и методы управляющего процесса
+struct bag{
+	bag(int argc, char *argv[]){
+		cur = 0;
 	}
-
-	void master_port(value_message&m){
-		m._srv = this; m.server_id = PORT_master;
+	void run();
+	void delay(double);
+// метод извлечения задачи, если задачи нет -- возвращает false
+	bool get(task*t){
+		if (cur<N){ t->num = cur++; return true; }
+		else return false;
 	}
-	
-	void master_func(value_message&m){
-		if (m.task == value_message::COS2){
-			m.x = cos(m.x)*cos(m.x); delay(1.0);
-			m.send();
-		}
-		else if (m.task == value_message::SIN2){
-			m.x = sin(m.x)*sin(m.x); delay(1.0);
-			m.send();
-		}
+// метод помещения результата вычисления задачи
+	void put(result*r){
 	}
-
-	void at(int _at){ ::at(this, _at); }
-	void delay(double t){ ::delay(this, t); }
-
-	friend void recv_worker(actor*a, message*m,int tag){
-		worker* th = (worker*)a;
-		if (tag == PORT_master) th->master_func(*((value_message*)m));
+// сохранение состояния, общего для рабочих процессов
+	void save(saver*s){
+		::save(s, &B, sizeof(double)*N*N); // матрица B
 	}
+// восстановление общего состояния на рабочих процессах
+	void restore(restorer*r){
+		::restore(r, &B, sizeof(double)*N*N); // матрица B 
+	}
+	int cur;//номер текущей строки в матрице С
 };
 
-int main(int argc, char *argv[])
+void delay(double);
+
+// процедура выполнения задачи на рабочем процессе
+void proc(task*t,result*r)
 {
-	my_engine _my_engine(argc,argv);
+	int i = r->num = t->num;
+	for (int j = 0; j<N; j++){// параллельное вычисление строки матрицы C
+		C[i][j] = 0.0;
+		for (int k = 0; k<N; k++)C[i][j] += A[i][k] * B[k][j];
+	}
+}
 
-	master _master(_my_engine);
-	worker _sin2_worker(_my_engine);
-	worker _cos2_worker(_my_engine);
+int main(int argc, char* argv[])
+{
+	bag b(argc, argv);
 
-	_sin2_worker.master_port(_master.sin2_port());
-	_cos2_worker.master_port(_master.cos2_port());
+	// инициализация
+	for (int i = 0; i<N; i++)
+		for (int j = 0; j<N; j++)A[i][j] = N*i + j;
 
-	_master.at(0);
-	_sin2_worker.at(1);
-	_cos2_worker.at(2);
+	for (int i = 0; i<N; i++)
+		for (int j = 0; j<N; j++)B[i][j] = N*i + j;
 
-	_my_engine.map();
-
-	double x = 1234;
-
-	_master.x = x;
-
-	_my_engine.run();
-
-	std::cout << "sin^2(" << x << ")+cos^2(" << x << ")=" << _master.x << '\n';
+	// параллельное умножение матриц
+	b.run();
 
 	double T1, Tp, Smax, Sp;
-	int Pmax, P = 5;
+	int Pmax;
 
-	if (TEMPLET::stat(&_my_engine, &T1, &Tp, &Pmax, &Smax, P, &Sp)){
+	if (TEMPLET::stat(&b, &T1, &Tp, &Pmax, &Smax, P, &Sp)){
 		std::cout << "T1 = " << T1 << ", Tp = " << Tp << ", Pmax = " << Pmax << ", Smax = " << Smax << ", P = " << P << ", Sp = " << Sp;
 	}
 
+	// вывод результата параллельного умножения
+	// отключить для больших N
+	cout << "\nC(parallel)=\n";
+	for (int i = 0; i<N; i++){
+		for (int j = 0; j<N; j++){
+			cout << C[i][j] << " ";
+		}
+		cout << '\n';
+	}
+
+	// очистка матрицы С
+	for (int i = 0; i<N; i++)
+		for (int j = 0; j<N; j++) C[i][j] = 0.0;
+
+	// последовательное умножение матриц
+	for (int i = 0; i<N; i++){
+		for (int j = 0; j<N; j++){
+			C[i][j] = 0.0;
+			for (int k = 0; k<N; k++)C[i][j] += A[i][k] * B[k][j];
+		}
+	}
+
+	// вывод результата последовательного умножения
+	// отключить для больших N
+	cout << "\nC(serial)=\n";
+	for (int i = 0; i<N; i++){
+		for (int j = 0; j<N; j++){
+			cout << C[i][j] << " ";
+		}
+		cout << '\n';
+	}
 	return 0;
 }

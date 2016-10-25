@@ -31,6 +31,9 @@ const char DELIM[] = " \t";
 
 typedef list<string> Block;
 
+string fmark(string&key){ return lead_sign_beg + key + lead_sign_end; }
+string lmark(){ return close_sign; }
+
 LTYPE linetype(string& line, string& key)
 {
 	size_t pos;
@@ -100,11 +103,12 @@ int main(int argc, char* argv[])
 		cout << "Templet skeleton processor. Copyright Sergei Vostokin, 2016" << endl
 			<< "Usage:  skel <options>\n" << endl
 			<< " -s -S <skeleton file name>" << endl
-			<< " -i -I <input file name>" << endl
-			<< " -o -O <output file name> -- assumed to be the same as an input, if not defined" << endl
+			<< " -i -I <input file>" << endl
+			<< " -o -O <output file> -- assumed to be the same as an input file, if not defined" << endl
 			<< " -r -R -- use no markup in realease version of the output file" << endl
-			<< " -b -B -- place blocks that have no pair in the skeleton into the bottom of output file" << endl
-			<< "          assumed to be ON, if input and output is the same file" << endl
+			<< " -b -B -- place blocks that have no pair in the skeleton into the bottom of" << endl
+			<< "          the output file;" << endl
+			<< "          assumed to be ON, if one file is used as input/output file" << endl
 			<< " -h -H -- print this screen" << endl;
 
 	}
@@ -133,9 +137,17 @@ int main(int argc, char* argv[])
 		while (file){
 			switch (linetype(line, key)){
 			case FMARK:
+				if (read_block) { 
+					cout << "ERROR: " << fmark(key) << " inside a block in ihe input file '" << infile << "' at line #" << count;
+					return 1; 
+				}
 				read_block = true;
 				break;
 			case LMARK:
+				if (!read_block) {
+					cout << "ERROR: " << lmark() << " outside a block in ihe input file '" << infile << "' at line #" << count;
+					return 1;
+				}
 				read_block = false;
 				{
 					map<string, Block>::const_iterator it = block_map.find(key);
@@ -177,6 +189,10 @@ int main(int argc, char* argv[])
 			
 			switch (linetype(line, key)){
 			case FMARK:
+				if (read_block) {
+					cout << "ERROR: skeleton is corrupted! The mark " << fmark(key) << " is inside a block in ihe skeleton file '" << skeleton << "' at line #" << count;
+					return 1;
+				}
 				read_block = true;
 				if(!isRelease) ofile << lead_sign_beg << key << lead_sign_end << endl;
 				
@@ -192,26 +208,31 @@ int main(int argc, char* argv[])
 					have_substituted_block = false;
 				break;
 			case LMARK:
+				if (!read_block) {
+					cout << "ERROR: skeleton is corrupted! The mark " << lmark() << " is outside a block in ihe skeleton file '" << skeleton << "' at line #" << count;
+					return 1;
+				}
 				read_block = false;
 				if (!isRelease) ofile << close_sign << endl;
 				break;
 			case TEXT:
 				if (!read_block || (read_block && !have_substituted_block)) ofile << line << endl;
 				break;
-			case FAULTY: cout << "ERROR: a faulty block found in skeleton file '" << skeleton << "' at line #" << count; return 1;
+			case FAULTY: cout << "ERROR: skeleton is corrupted! A faulty block found in skeleton file '" << skeleton << "' at line #" << count; return 1;
 			}
 			getline(ifile, line); count++;
 		}
 
 		if (!block_map.empty()){
 			cout << "WARNING: not all blocks from the input file '" << infile << "' have a pair in the skeleton file '" << skeleton <<"'" << endl;
+			cout << "         see the bottom of the output file '" << outfile << "'" << endl;
 			if (place_bottom){
 				map<string, Block>::const_iterator it;
 				for (it = block_map.begin(); it != block_map.end(); it++){
 					ofile << lead_sign_beg << (*it).first << lead_sign_end << endl;
 					list<string>::const_iterator its;
 					for (its = (*it).second.begin(); its != (*it).second.end(); its++)
-						cout << (*its) << endl;
+						ofile << (*its) << endl;
 					ofile << close_sign << endl;
 				}
 			}
