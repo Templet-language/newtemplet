@@ -1,112 +1,151 @@
 /*$TET$header*/
-	// TODO: place additional headers and other stuff here
 #include <templet.hpp>
-	//	is often needed
 /*$TET$*/
+#include <queue>
 
+using namespace std;
 using namespace TEMPLET;
 
-// состо€ние задачи
+enum {FIRST_CALL, NEXT_CALL};
+
 struct task{
-// сохранение задачи перед отправкой рабочему процессу
 	void save(saver*s){
 /*$TET$task$save*/
-	// TODO: define serialization code here
-	// with ::save(s, &data, sizeof(data)); calls
 /*$TET$*/
 	}
-// восстановление состо€ни€ задачи на рабочем процессе
 	void restore(restorer*r){
 /*$TET$task$restore*/
-	// TODO: define deserialization code here
-	// with ::restore(r, &data, sizeof(data)); calls
 /*$TET$*/
 	}
 /*$TET$task$data*/
-	// TODO: define task data here
 /*$TET$*/
 };
 
-// результат выполнени€ задачи
 struct result{
-// сохранение результата перед отправкой управл€ющему процессу
 	void save(saver*s){
 /*$TET$result$save*/
-	// TODO: define serialization code here
-	// with ::save(s, &data, sizeof(data)); calls
 /*$TET$*/
 	}
-// восстановление результата на управл€ющем процессе
 	void restore(restorer*r){
 /*$TET$result$restore*/
-	// TODO: define deserialization code here
-	// with ::restore(r, &data, sizeof(data)); calls
 /*$TET$*/
 	}
 /*$TET$result$data*/
-	// TODO: define result data here
 /*$TET$*/
 };
 
-// состо€ние и методы управл€ющего процесса
-struct bag{
+class task_result :  public message{
+public:
+	task_result(engine*e,actor*m) : _master(m){
+		::init(this, e, save_adapter, restore_adapter);
+		_call = true;
+	}
+	void save(saver*s){
+		::save(s, &_call, sizeof(_call));
+		if(_call) _result.save(s);
+		else _task.save(s);
+	}
+	void restore(restorer*r){
+		::restore(r,&_call,sizeof(_call));
+		if(_call) _result.restore(r);
+		else _task.restore(r);
+	}
+
+	bool _call;
+	task _task;
+	result _result;
+
+	friend void save_adapter(message*m, saver*s){((value_message*)m)->save(s);}
+	friend void restore_adapter(message*m, restorer*r){((value_message*)m)->restore(r);}
+};
+
+class bag : public engine{
 	bag(int argc, char *argv[]){
+		::init(this,argc,argv);
 /*$TET$bag$init*/
-	// TODO: place initialization code here
 /*$TET$*/
 	}
 	void run();
 	void delay(double);
-// метод извлечени€ задачи, если задачи нет -- возвращает false
+
 	bool get(task*t){
 /*$TET$bag$get*/
-	// TODO: define getting a task from the the bag code (if return false -- no task have got) 
 /*$TET$*/	
 	}
-// метод помещени€ результата вычислени€ задачи
 	void put(result*r){
 /*$TET$bag$put*/
-	// TODO: define putting result to the bag code
 /*$TET$*/	
 	}
-// сохранение состо€ни€, общего дл€ рабочих процессов
 	void save(saver*s){
 /*$TET$bag$save*/
-	// TODO: define serialization code here
-	// with ::save(s, &data, sizeof(data)); calls
-	// to copy a part of the master process state to all worker processes
 /*$TET$*/
 	}
-// восстановление общего состо€ни€ на рабочих процессах
 	void restore(restorer*r){
 /*$TET$bag$restore*/
-	// TODO: define deserialization code here
-	// with ::restore(r, &data, sizeof(data)); calls
-	// to copy a part of the master process state to all worker processes
 /*$TET$*/
 	}
 /*$TET$bag$data*/
-	// TODO: define bag data here
-/*$TET$*/	
+/*$TET$*/
+	master* _master;
+	worker* _workers;
+	int _worker_num;
 };
 
-void delay(double);
+class master : public actor{
+public:
+	master(bag*b): _bag(b) {
+		::init(this, b, recv_master, save_adapter, restore_adapter);
+		_wait.clear();
+	}
 
-// процедура выполнени€ задачи на рабочем процессе
+	friend void recv_master (actor*a, message*m,int tag){
+		task_result* tr=(task_result*)m;
+		if(tag==FIRST_CALL){
+			
+		}
+		else if (tag==NEXT_CALL){
+			
+		}
+	}
+
+	void save(saver*s){}
+	void restore(restorer*r){}
+	friend void save_adapter(actor*a, saver*s){((value_message*)a)->save(s);}
+	friend void restore_adapter(actor*a, restorer*r){((value_message*)a)->restore(r);}
+
+	bag* _bag;
+	queue<pair<task_result*,actor*>> _wait;
+};
+
 void proc(task*t,result*r)
 {
 /*$TET$proc$data*/
-	// TODO: define task processing code here
 /*$TET$*/
 }
 
+class worker : public actor{
+public:
+	worker(bag*b): _bag(b),_master(b->_master) {
+		::init(this, b, recv_master, save_adapter, restore_adapter);
+		_init = true;
+	}
+
+	friend void recv_worker (actor*a, message*m,int tag){
+		task_result* tr = (task_result*)m;
+		proc(&tr->_task,&tr->_result);
+		tr->_call = true;
+		::send(tr, _master, NEXT_CALL);
+	}
+
+	void save(saver*s){if(_init)_bag->save(s); _init=false;}
+	void restore(restorer*r){if(_init)_bag->restore(s); _init=false;}
+	friend void save_adapter(actor*a, saver*s){((value_message*)a)->save(s);}
+	friend void restore_adapter(actor*a, restorer*r){((value_message*)a)->restore(r);}
+
+	bool _init;
+	master* _master;
+	bag* _bag;
+};
+
 /*$TET$footer*/
-	// TODO: define you program entry point
-	// int main(int argc, char *argv[])
-	// including
-	// 1) creating the bag object
-	// 2) input code
-	// 3) run with bag.run()
-	// 4) output code
-	// 5) performance statistics code with ::stat(...)
 /*$TET$*/
