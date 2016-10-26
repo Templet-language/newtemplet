@@ -6,7 +6,7 @@
 using namespace std;
 using namespace TEMPLET;
 
-enum {FIRST_CALL, NEXT_CALL};
+enum {FIRST_CALL, NEXT_CALL,REPLY};
 
 struct task{
 	void save(saver*s){
@@ -54,6 +54,7 @@ public:
 	bool _call;
 	task _task;
 	result _result;
+	actor* _worker;
 
 	friend void save_adapter(message*m, saver*s){((value_message*)m)->save(s);}
 	friend void restore_adapter(message*m, restorer*r){((value_message*)m)->restore(r);}
@@ -64,6 +65,9 @@ class bag : public engine{
 		::init(this,argc,argv);
 /*$TET$bag$init*/
 /*$TET$*/
+	}
+	~bag(){
+		delete [] _workers;
 	}
 	void run();
 	void delay(double);
@@ -95,16 +99,28 @@ class master : public actor{
 public:
 	master(bag*b): _bag(b) {
 		::init(this, b, recv_master, save_adapter, restore_adapter);
-		_wait.clear();
+		_wait.clear(); _active = 0;
 	}
 
 	friend void recv_master (actor*a, message*m,int tag){
 		task_result* tr=(task_result*)m;
 		if(tag==FIRST_CALL){
-			
+			if(_bag->get(tr->_task)){
+				::send(tr,a,REPLY);	active++;
+			}
+			else{
+				tr->_worker=a;_wait.push(tr);
+			}
 		}
 		else if (tag==NEXT_CALL){
+			_bag->put(tr->_result);
+			tr->_worker=a; _wait.push(tr);
 			
+			while(!_queue.empty() && tr=_queue.back() && _bag->get(tr)){
+				_queue.pop(); ::send(tr,tr->_worker,REPLY); _active++;
+			}
+
+			if(!active)::stop(_bag);
 		}
 	}
 
@@ -114,7 +130,8 @@ public:
 	friend void restore_adapter(actor*a, restorer*r){((value_message*)a)->restore(r);}
 
 	bag* _bag;
-	queue<pair<task_result*,actor*>> _wait;
+	queue<task_result*> _wait;
+	int _active;
 };
 
 void proc(task*t,result*r)
