@@ -24,68 +24,132 @@ const int N = 10;
 double A[N][N], B[N][N], C[N][N];
 
 using namespace std;
+#include <queue>
 
+using namespace std;
 using namespace TEMPLET;
 
-// состояние задачи
+enum {FIRST_CALL, NEXT_CALL,REPLY};
+
 struct task{
-// сохранение задачи перед отправкой рабочему процессу
 	void save(saver*s){
-		::save(s, &num, sizeof(num)); // строка num матрицы A
-		::save(s, &A[num], sizeof(double)*N);
+		::save(s, &num, sizeof(num)); // строка num
+		::save(s, &A[num], sizeof(double)*N); // матрицы A
 	}
-// восстановление состояния задачи на рабочем процессе
 	void restore(restorer*r){
-		::restore(r, &num, sizeof(num)); // строка num матрицы A
-		::restore(r, &A[num], sizeof(double)*N);
+		::restore(r, &num, sizeof(num)); // строка num
+		::restore(r, &A[num], sizeof(double)*N); // матрицы A
 	}
 	int num;// номер вычисляемой строки матрицы C
 };
 
-// результат выполнения задачи
 struct result{
-// сохранение результата перед отправкой управляющему процессу
 	void save(saver*s){
 		::save(s, &num, sizeof(num)); // строка num 
 		::save(s, &C[num], sizeof(double)*N); // матрицы C
 	}
-// восстановление результата на управляющем процессе
 	void restore(restorer*r){
 		::restore(r, &num, sizeof(num)); // строка num 
 		::restore(r, &C[num], sizeof(double)*N); // матрицы C
 	}
-	int num; // номер вычисленной строки матрицы c
+	int num; // номер вычисленной строки матрицы C
 };
 
-// состояние и методы управляющего процесса
-struct bag{
+class task_result :  public message{
+public:
+	task_result(engine*e,actor*m) : _master(m){
+		::init(this, e, save_adapter, restore_adapter);
+		_call = true;
+	}
+	void save(saver*s){
+		::save(s, &_call, sizeof(_call));
+		if(_call) _result.save(s);
+		else _task.save(s);
+	}
+	void restore(restorer*r){
+		::restore(r,&_call,sizeof(_call));
+		if(_call) _result.restore(r);
+		else _task.restore(r);
+	}
+
+	bool _call;
+	task _task;
+	result _result;
+	actor* _worker;
+
+	friend void save_adapter(message*m, saver*s){((value_message*)m)->save(s);}
+	friend void restore_adapter(message*m, restorer*r){((value_message*)m)->restore(r);}
+};
+
+class bag : public engine{
 	bag(int argc, char *argv[]){
-		cur = 0;
+		::init(this,argc,argv);
+		cur = 0; // начинаем вычисление с нулевой строки
+	}
+	~bag(){
+		delete [] _workers;
 	}
 	void run();
 	void delay(double);
-// метод извлечения задачи, если задачи нет -- возвращает false
+
 	bool get(task*t){
 		if (cur<N){ t->num = cur++; return true; }
 		else return false;
 	}
-// метод помещения результата вычисления задачи
 	void put(result*r){
+// в этом примере не требует определения
 	}
-// сохранение состояния, общего для рабочих процессов
 	void save(saver*s){
 		::save(s, &B, sizeof(double)*N*N); // матрица B
 	}
-// восстановление общего состояния на рабочих процессах
 	void restore(restorer*r){
 		::restore(r, &B, sizeof(double)*N*N); // матрица B 
 	}
-	int cur;//номер текущей строки в матрице С
+	int cur; // курсор по строкам матрицы C
+	master* _master;
+	worker* _workers;
+	int _worker_num;
 };
 
-void delay(double);
+class master : public actor{
+public:
+	master(bag*b): _bag(b) {
+		::init(this, b, recv_master, save_adapter, restore_adapter);
+		_wait.clear(); _active = 0;
+	}
 
-// процедура выполнения задачи на рабочем процессе
+	friend void recv_master (actor*a, message*m,int tag){
+		task_result* tr=(task_result*)m;
+		if(tag==FIRST_CALL){
+			if(_bag->get(tr->_task)){
+				::send(tr,a,REPLY);	active++;
+			}
+			else{
+				tr->_worker=a;_wait.push(tr);
+			}
+		}
+		else if (tag==NEXT_CALL){
+			_bag->put(tr->_result);
+			tr->_worker=a; _wait.push(tr);
+			
+			while(!_queue.empty() && tr=_queue.back() && _bag->get(tr)){
+				_queue.pop(); ::send(tr,tr->_worker,REPLY); _active++;
+			}
+
+			if(!active)::stop(_bag);
+		}
+	}
+
+	void save(saver*s){}
+	void restore(restorer*r){}
+	friend void save_adapter(actor*a, saver*s){((value_message*)a)->save(s);}
+	friend void restore_adapter(actor*a, restorer*r){((value_message*)a)->restore(r);}
+
+	bag* _bag;
+	queue<task_result*> _wait;
+	int _active;
+};
+
 void proc(task*t,result*r)
 {
 	int i = r->num = t->num;
@@ -94,6 +158,30 @@ void proc(task*t,result*r)
 		for (int k = 0; k<N; k++)C[i][j] += A[i][k] * B[k][j];
 	}
 }
+
+class worker : public actor{
+public:
+	worker(bag*b): _bag(b),_master(b->_master) {
+		::init(this, b, recv_master, save_adapter, restore_adapter);
+		_init = true;
+	}
+
+	friend void recv_worker (actor*a, message*m,int tag){
+		task_result* tr = (task_result*)m;
+		proc(&tr->_task,&tr->_result);
+		tr->_call = true;
+		::send(tr, _master, NEXT_CALL);
+	}
+
+	void save(saver*s){if(_init)_bag->save(s); _init=false;}
+	void restore(restorer*r){if(_init)_bag->restore(s); _init=false;}
+	friend void save_adapter(actor*a, saver*s){((value_message*)a)->save(s);}
+	friend void restore_adapter(actor*a, restorer*r){((value_message*)a)->restore(r);}
+
+	bool _init;
+	master* _master;
+	bag* _bag;
+};
 
 int main(int argc, char* argv[])
 {

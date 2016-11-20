@@ -29,20 +29,20 @@ using namespace std;
 
 using namespace TEMPLET;
 
-// состояние задачи
+// the task state
 struct task{
-// сохранение задачи перед отправкой рабочему процессу
+// saving the tasks before sending to a worker process
 	void save(saver*s){
 /*$TET$task$save*/
-		::save(s, &num, sizeof(num)); // строка num матрицы A
-		::save(s, &A[num], sizeof(double)*N);
+		::save(s, &num, sizeof(num)); // строка num
+		::save(s, &A[num], sizeof(double)*N); // матрицы A
 /*$TET$*/
 	}
-// восстановление состояния задачи на рабочем процессе
+// restore the task state on a worker process
 	void restore(restorer*r){
 /*$TET$task$restore*/
-		::restore(r, &num, sizeof(num)); // строка num матрицы A
-		::restore(r, &A[num], sizeof(double)*N);
+		::restore(r, &num, sizeof(num)); // строка num
+		::restore(r, &A[num], sizeof(double)*N); // матрицы A
 /*$TET$*/
 	}
 /*$TET$task$data*/
@@ -50,16 +50,16 @@ struct task{
 /*$TET$*/
 };
 
-// результат выполнения задачи
+// the result of task execution
 struct result{
-// сохранение результата перед отправкой управляющему процессу
+// save the result before sending to the master process
 	void save(saver*s){
 /*$TET$result$save*/
 		::save(s, &num, sizeof(num)); // строка num 
 		::save(s, &C[num], sizeof(double)*N); // матрицы C
 /*$TET$*/
 	}
-// восстановление результата на управляющем процессе
+// restore the result on the master process
 	void restore(restorer*r){
 /*$TET$result$restore*/
 		::restore(r, &num, sizeof(num)); // строка num 
@@ -67,51 +67,52 @@ struct result{
 /*$TET$*/
 	}
 /*$TET$result$data*/
-	int num; // номер вычисленной строки матрицы c
+	int num; // номер вычисленной строки матрицы C
 /*$TET$*/
 };
 
-// состояние и методы управляющего процесса
+// states and methods of the master process
 struct bag{
 	bag(int argc, char *argv[]){
 /*$TET$bag$init*/
-		cur = 0;
+		cur = 0; // начинаем вычисление с нулевой строки
 /*$TET$*/
 	}
 	void run();
 	void delay(double);
-// метод извлечения задачи, если задачи нет -- возвращает false
+// task extraction method, if there is no task - it returns false
 	bool get(task*t){
 /*$TET$bag$get*/
 		if (cur<N){ t->num = cur++; return true; }
 		else return false;
 /*$TET$*/
 	}
-// метод помещения результата вычисления задачи
+// placing the result method
 	void put(result*r){
 /*$TET$bag$put*/
+// в этом примере не требует определения
 /*$TET$*/
 	}
-// сохранение состояния, общего для рабочих процессов
+// saving worker processes common state method
 	void save(saver*s){
 /*$TET$bag$save*/
 		::save(s, &B, sizeof(double)*N*N); // матрица B
 /*$TET$*/
 	}
-// восстановление общего состояния на рабочих процессах
+//  restoring worker processes common state method
 	void restore(restorer*r){
 /*$TET$bag$restore*/
 		::restore(r, &B, sizeof(double)*N*N); // матрица B 
 /*$TET$*/
 	}
 /*$TET$bag$data*/
-	int cur;//номер текущей строки в матрице С
+	int cur; // курсор по строкам матрицы C
 /*$TET$*/
 };
 
 void delay(double);
 
-// процедура выполнения задачи на рабочем процессе
+// worker process task execution procedure
 void proc(task*t,result*r)
 {
 /*$TET$proc$data*/

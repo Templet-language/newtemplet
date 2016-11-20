@@ -6,16 +6,16 @@
 
 using namespace TEMPLET;
 
-// состо€ние задачи
+// the task state
 struct task{
-// сохранение задачи перед отправкой рабочему процессу
+// saving the tasks before sending to a worker process
 	void save(saver*s){
 /*$TET$task$save*/
 	// TODO: define serialization code here
 	// with ::save(s, &data, sizeof(data)); calls
 /*$TET$*/
 	}
-// восстановление состо€ни€ задачи на рабочем процессе
+// restore the task state on a worker process
 	void restore(restorer*r){
 /*$TET$task$restore*/
 	// TODO: define deserialization code here
@@ -27,16 +27,16 @@ struct task{
 /*$TET$*/
 };
 
-// результат выполнени€ задачи
+// the result of task execution
 struct result{
-// сохранение результата перед отправкой управл€ющему процессу
+// save the result before sending to the master process
 	void save(saver*s){
 /*$TET$result$save*/
 	// TODO: define serialization code here
 	// with ::save(s, &data, sizeof(data)); calls
 /*$TET$*/
 	}
-// восстановление результата на управл€ющем процессе
+// restore the result on the master process
 	void restore(restorer*r){
 /*$TET$result$restore*/
 	// TODO: define deserialization code here
@@ -48,7 +48,7 @@ struct result{
 /*$TET$*/
 };
 
-// состо€ние и методы управл€ющего процесса
+// states and methods of the master process
 struct bag{
 	bag(int argc, char *argv[]){
 /*$TET$bag$init*/
@@ -57,19 +57,19 @@ struct bag{
 	}
 	void run();
 	void delay(double);
-// метод извлечени€ задачи, если задачи нет -- возвращает false
+// task extraction method, if there is no task - it returns false
 	bool get(task*t){
 /*$TET$bag$get*/
 	// TODO: define getting a task from the the bag code (if return false -- no task have got) 
 /*$TET$*/	
 	}
-// метод помещени€ результата вычислени€ задачи
+// placing the result method
 	void put(result*r){
 /*$TET$bag$put*/
 	// TODO: define putting result to the bag code
 /*$TET$*/	
 	}
-// сохранение состо€ни€, общего дл€ рабочих процессов
+// saving worker processes common state method
 	void save(saver*s){
 /*$TET$bag$save*/
 	// TODO: define serialization code here
@@ -77,7 +77,7 @@ struct bag{
 	// to copy a part of the master process state to all worker processes
 /*$TET$*/
 	}
-// восстановление общего состо€ни€ на рабочих процессах
+//  restoring worker processes common state method
 	void restore(restorer*r){
 /*$TET$bag$restore*/
 	// TODO: define deserialization code here
@@ -92,7 +92,7 @@ struct bag{
 
 void delay(double);
 
-// процедура выполнени€ задачи на рабочем процессе
+// worker process task execution procedure
 void proc(task*t,result*r)
 {
 /*$TET$proc$data*/
