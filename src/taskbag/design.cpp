@@ -79,7 +79,7 @@ struct bag{
 /*$TET$*/
 	}
 	void run();
-	void delay(double);
+	
 // task extraction method, if there is no task - it returns false
 	bool get(task*t){
 /*$TET$bag$get*/
@@ -110,8 +110,6 @@ struct bag{
 /*$TET$*/
 };
 
-void delay(double);
-
 // worker process task execution procedure
 void proc(task*t,result*r)
 {
@@ -138,13 +136,6 @@ int main(int argc, char* argv[])
 
 	// параллельное умножение матриц
 	b.run();
-
-	double T1, Tp, Smax, Sp;
-	int Pmax;
-
-	if (TEMPLET::stat(&b, &T1, &Tp, &Pmax, &Smax, P, &Sp)){
-		std::cout << "T1 = " << T1 << ", Tp = " << Tp << ", Pmax = " << Pmax << ", Smax = " << Smax << ", P = " << P << ", Sp = " << Sp;
-	}
 
 	// вывод результата параллельного умножения
 	// отключить для больших N

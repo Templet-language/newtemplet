@@ -56,7 +56,7 @@ struct bag{
 /*$TET$*/
 	}
 	void run();
-	void delay(double);
+	
 // task extraction method, if there is no task - it returns false
 	bool get(task*t){
 /*$TET$bag$get*/
@@ -90,8 +90,6 @@ struct bag{
 /*$TET$*/	
 };
 
-void delay(double);
-
 // worker process task execution procedure
 void proc(task*t,result*r)
 {
@@ -108,5 +106,4 @@ void proc(task*t,result*r)
 	// 2) input code
 	// 3) run with bag.run()
 	// 4) output code
-	// 5) performance statistics code with ::stat(...)
 /*$TET$*/

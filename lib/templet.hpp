@@ -15,6 +15,7 @@
 /*--------------------------------------------------------------------------*/
 
 #pragma once
+#include <functional>
 
 namespace TEMPLET{
 
@@ -30,7 +31,7 @@ namespace TEMPLET{
 	inline void stop(actor*);
 	inline void delay(actor*, double);
 
-	inline void init(message*, engine*, void(*save)(message*,saver*)=0, void(*restore)(message*,restorer*)=0);
+	inline void init(message*, engine*, void(*save)(message*,saver*)=0, void(*restore)(message*, restorer*) = 0);
 	inline void send(message*, actor*,int tag);
 	inline bool access(message*, actor*);
 
@@ -51,6 +52,7 @@ namespace TEMPLET{
 	(defined(TET_MPI_EXEC) && (defined(TET_DEBUG_EXEC) || defined(TET_SERIAL_EXEC) || defined(TET_PARALLEL_EXEC) || defined(TET_EMULATION_EXEC)))
 #error you should define ever TET_DEBUG_EXEC, or TET_SERIAL_EXEC, or TET_PARALLEL_EXEC, or TET_EMULATION_EXEC, or TET_MPI_EXEC mode
 #endif
+
 
 #if defined(TET_DEBUG_EXEC) || (!defined(TET_SERIAL_EXEC) && !defined(TET_PARALLEL_EXEC) && !defined(TET_EMULATION_EXEC) && !defined(TET_MPI_EXEC))
 
@@ -106,7 +108,7 @@ namespace TEMPLET{
 #endif		
 	};
 
-	inline void init(actor*a, engine*e, void(*recv)(actor*,message*,int tag), void(*save)(actor*,saver*), void(*restore)(actor*,restorer*))
+	inline void init(actor*a, engine*e, void(*recv)(actor*, message*, int tag), void(*save)(actor*, saver*), void(*restore)(actor*, restorer*))
 	{
 		a->_recv = recv; a->_engine = e;
 #ifdef TET_DEBUG_SERIAL
@@ -119,7 +121,7 @@ namespace TEMPLET{
 	inline void stop(actor*a){	a->_engine->_stop = true; }
 	inline void delay(actor*, double){}
 
-	inline void init(message*m, engine*e, void(*save)(message*,saver*), void(*restore)(message*,restorer*))
+	inline void init(message*m, engine*e, void(*save)(message*,saver*), void(*restore)(message*, restorer*))
 	{
 		m->_sending = false; m->_actor = 0; m->_tag = 0;
 #ifdef TET_DEBUG_SERIAL
@@ -339,7 +341,7 @@ namespace TEMPLET{
 		e->_stop = false;
 	}
 
-	inline int  nodes(engine*){ return 1; }
+	inline int  nodes(engine*){ return std::thread::hardware_concurrency(); }
 	inline void map(engine*){}
 
 	inline void tfunc(engine*e)
