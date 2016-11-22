@@ -148,7 +148,14 @@ public:
 struct bag : engine{
 	bag(int argc, char *argv[]){
 		::init(this, argc, argv);
+
+		bool is_shm = false;
 		_nworkers = ::nodes(this);
+
+		if (_nworkers == 1){
+			is_shm = true;
+			_nworkers = std::thread::hardware_concurrency();
+		}
 
 		_messages = new task_result*[_nworkers];
 		_master = new master(this);
@@ -159,8 +166,10 @@ struct bag : engine{
 			_messages[i] = new task_result(this,_master,_workers[i]);
 		}
 
-		::at(_master, 0);
-		for (int i = 0; i < _nworkers; i++)	::at(_workers[i], i);
+		if (!is_shm){
+			::at(_master, 0);
+			for (int i = 0; i < _nworkers; i++)	::at(_workers[i], i);
+		}
 	}
 
 	~bag(){

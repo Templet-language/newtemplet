@@ -127,47 +127,26 @@ int main(int argc, char* argv[])
 {
 	bag b(argc, argv);
 
-	// инициализация
-	for (int i = 0; i<N; i++)
-		for (int j = 0; j<N; j++)A[i][j] = N*i + j;
-
-	for (int i = 0; i<N; i++)
-		for (int j = 0; j<N; j++)B[i][j] = N*i + j;
+	// инициализация матриц
+	for (int i = 0; i<N; i++){
+		for (int j = 0; j<N; j++){
+			A[i][j] = 2.0; B[i][j] = 5.0; C[i][j] = 0.0;
+		}
+	}
 
 	// параллельное умножение матриц
 	b.run();
 
-	// вывод результата параллельного умножения
-	// отключить для больших N
-	cout << "\nC(parallel)=\n";
-	for (int i = 0; i<N; i++){
-		for (int j = 0; j<N; j++){
-			cout << C[i][j] << " ";
-		}
-		cout << '\n';
-	}
-
-	// очистка матрицы С
-	for (int i = 0; i<N; i++)
-		for (int j = 0; j<N; j++) C[i][j] = 0.0;
-
-	// последовательное умножение матриц
-	for (int i = 0; i<N; i++){
-		for (int j = 0; j<N; j++){
-			C[i][j] = 0.0;
-			for (int k = 0; k<N; k++)C[i][j] += A[i][k] * B[k][j];
+	// проверяем результат
+	for (int i = 0; i < N; i++){
+		for (int j = 0; j < N; j++){
+			if (C[i][j] != 10.0*N){
+				printf("Something went wrong!!!\n");
+				return EXIT_FAILURE;
+			}
 		}
 	}
 
-	// вывод результата последовательного умножения
-	// отключить для больших N
-	cout << "\nC(serial)=\n";
-	for (int i = 0; i<N; i++){
-		for (int j = 0; j<N; j++){
-			cout << C[i][j] << " ";
-		}
-		cout << '\n';
-	}
-	return 0;
+	return EXIT_SUCCESS;
 }
 /*$TET$*/

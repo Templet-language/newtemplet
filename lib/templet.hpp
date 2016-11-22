@@ -45,15 +45,6 @@ namespace TEMPLET{
 	inline void restore(restorer*, void*, size_t);
 }
 
-#if (defined(TET_DEBUG_EXEC) && (defined(TET_SERIAL_EXEC) || defined(TET_PARALLEL_EXEC) || defined(TET_EMULATION_EXEC) || defined(TET_MPI_EXEC))) || \
-	(defined(TET_SERIAL_EXEC) && (defined(TET_DEBUG_EXEC) || defined(TET_PARALLEL_EXEC) || defined(TET_EMULATION_EXEC) || defined(TET_MPI_EXEC)))  || \
-	(defined(TET_PARALLEL_EXEC) && (defined(TET_DEBUG_EXEC) || defined(TET_SERIAL_EXEC) || defined(TET_EMULATION_EXEC) || defined(TET_MPI_EXEC))) || \
-	(defined(TET_EMULATION_EXEC) && (defined(TET_DEBUG_EXEC) || defined(TET_SERIAL_EXEC) || defined(TET_PARALLEL_EXEC) || defined(TET_MPI_EXEC))) || \
-	(defined(TET_MPI_EXEC) && (defined(TET_DEBUG_EXEC) || defined(TET_SERIAL_EXEC) || defined(TET_PARALLEL_EXEC) || defined(TET_EMULATION_EXEC)))
-#error you should define ever TET_DEBUG_EXEC, or TET_SERIAL_EXEC, or TET_PARALLEL_EXEC, or TET_EMULATION_EXEC, or TET_MPI_EXEC mode
-#endif
-
-
 #if defined(TET_DEBUG_EXEC) || (!defined(TET_SERIAL_EXEC) && !defined(TET_PARALLEL_EXEC) && !defined(TET_EMULATION_EXEC) && !defined(TET_MPI_EXEC))
 
 #ifndef TET_DEBUG_EXEC
@@ -341,7 +332,7 @@ namespace TEMPLET{
 		e->_stop = false;
 	}
 
-	inline int  nodes(engine*){ return std::thread::hardware_concurrency(); }
+	inline int  nodes(engine*){ return 1; }
 	inline void map(engine*){}
 
 	inline void tfunc(engine*e)

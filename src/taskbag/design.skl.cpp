@@ -2,6 +2,13 @@
 	// TODO: place additional headers and other stuff here
 #include <templet.hpp>
 	//	is often needed
+// options:
+//  -- use or do not use comments
+//  -- language (if use comments)
+//  -- DM or SHM deployment
+//  -- copy or do not copy common state to workers (if DM deployment)
+//  -- use or do not use 'put' method
+//  -- use or do not use 'if_task' method
 /*$TET$*/
 
 using namespace TEMPLET;
