@@ -15,7 +15,6 @@
 /*--------------------------------------------------------------------------*/
 
 #pragma once
-#include <functional>
 
 namespace TEMPLET{
 
@@ -857,9 +856,10 @@ namespace TEMPLET{
 	{
 		engine* e = s->_engine;
 		if (e->_buffer_size < size + e->_buffer_cursor){
-			e->_buffer = realloc(e->_buffer, e->_buffer_size + ALLOC_SIZE);
+			int blocks = (size + e->_buffer_cursor) / ALLOC_SIZE + 1; 
+			e->_buffer = realloc(e->_buffer, blocks*ALLOC_SIZE);
 			assert(e->_buffer);
-			e->_buffer_size += ALLOC_SIZE;
+			e->_buffer_size = blocks * ALLOC_SIZE;
 		}
 		memmove((char*)(e->_buffer) + (e->_buffer_cursor), source, size);
 		e->_buffer_cursor += size;
