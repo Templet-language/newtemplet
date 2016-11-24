@@ -8,7 +8,8 @@
 //  -- DM or SHM deployment
 //  -- copy or do not copy common state to workers (if DM deployment)
 //  -- use or do not use 'put' method
-//  -- use or do not use 'if_task' method
+//  -- use or do not use 'empty' method
+//  -- use or do not use 'delay' method
 /*$TET$*/
 
 using namespace TEMPLET;
