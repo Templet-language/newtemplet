@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{038E5BBF-104B-4128-A3A9-D10E1BA6D49A}</ProjectGuid>
+    <ProjectGuid>{E0CBBF26-6CDC-4F50-BC30-5D9AAFA2DC03}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>vs2013</RootNamespace>
   </PropertyGroup>
@@ -52,7 +52,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../../../lib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\GitHub\newtemplet\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -68,7 +68,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../../../lib</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\GitHub\newtemplet\lib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -78,10 +78,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\design.cpp" />
-    <ClCompile Include="..\design.skl.cpp" />
     <ClCompile Include="..\release.cpp" />
-    <ClCompile Include="..\release.skl.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -58,12 +58,10 @@ struct result{
 
 // states and methods of the master process
 struct bag{
-	bag(int argc, char *argv[]){
-/*$TET$bag$init*/
-	// TODO: place initialization code here
-/*$TET$*/
-	}
+	bag(int argc, char *argv[]);
 	void run();
+	void delay();// use delay(..) to spec 'get' or/and 'put' time in logical units
+	double speedup();// speedup estimation
 	
 // task extraction method, if there is no task - it returns false
 	bool get(task*t){
@@ -97,6 +95,8 @@ struct bag{
 	// TODO: define bag data here
 /*$TET$*/	
 };
+
+void delay(double);// use delay(..) to spec 'proc' time in logical units
 
 // worker process task execution procedure
 void proc(task*t,result*r)

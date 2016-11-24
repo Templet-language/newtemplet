@@ -3,7 +3,10 @@
 #include <templet.hpp>
 /*$TET$*/
 #include <queue>
+
+#ifndef TET_MPI_EXEC
 #include <thread>
+#endif
 
 using namespace std;
 using namespace TEMPLET;
@@ -17,14 +20,14 @@ struct task_result : message{
 
 	void save(saver*s){
 		::save(s, &_call, sizeof(_call));
-		if(_call) _result.save(s);
-		else _task.save(s);
+		if(_call == NEXT_CALL) _result.save(s);
+		else if(_call == REPLY) _task.save(s);
 	}
 
 	void restore(restorer*r){
 		::restore(r,&_call,sizeof(_call));
-		if(_call) _result.restore(r);
-		else _task.restore(r);
+		if(_call == NEXT_CALL) _result.restore(r);
+		else if(_call == REPLY) _task.restore(r);
 	}
 
 	struct task{
@@ -64,22 +67,34 @@ struct task_result : message{
 	friend void restore_adapter(message*m, restorer*r){((task_result*)m)->restore(r);}
 };
 
-struct master : actor{
+struct worker;
 
-	master(engine*e) {::init(this, e, recv_master); _active = 0;}
+struct bag : actor{
 
-	friend void recv_master(actor*a, message*m, int tag){((master*)a)->recv((task_result*)m, tag);}
+	bag(int argc, char *argv[], int nproc = 0);
+	~bag();
+	void delay(double t){ TEMPLET::delay(this,t); }
+	double speedup(){
+		double T1, Tp, Smax, Sp; int Pmax;
+		if (TEMPLET::stat(&_engine, &T1, &Tp, &Pmax, &Smax, 1, &Sp)) return Smax; else return -1;
+	}
+
+	void run(){	::map(&_engine); ::run(&_engine); }
+
+	friend void recv_master(actor*a, message*m, int tag){((bag*)a)->recv((task_result*)m, tag);}
 
 	queue<task_result*> _wait;
 	int _active;
 
 	void recv(task_result*m, int tag){
+		_active--;
 		if (tag == task_result::FIRST_CALL){
 			if (get(&m->_task)){
-				m->reply(); _active++;
+				m->reply();_active++;
 			}
-			else
+			else{
 				_wait.push(m);
+			}
 		}
 		else if (tag == task_result::NEXT_CALL){
 			put(&m->_result);
@@ -115,16 +130,22 @@ struct master : actor{
 	
 /*$TET$bag$data*/
 /*$TET$*/
+
+	engine _engine;
+	task_result** _messages;
+	worker** _workers;
+	int _nworkers;
 };
 
 struct worker : actor{
 public:
-	worker(engine*e,master*m): _master(m) {
+	worker(engine*e,bag*b):_bag(b){
 		::init(this, e, recv_worker, save_adapter, restore_adapter);
 		_init = true;
 	}
+	void delay(double t){ TEMPLET::delay(this,t); }
 
-	friend void proc(task_result::task*t, task_result::result*r)
+	void proc(task_result::task*t, task_result::result*r)
 	{
 /*$TET$proc$data*/
 /*$TET$*/
@@ -132,61 +153,55 @@ public:
 
 	friend void recv_worker (actor*a, message*m,int tag){
 		task_result* tr = (task_result*)m;
-		proc(&tr->_task,&tr->_result);
+		worker* w = (worker*)a;
+		w->proc(&tr->_task,&tr->_result);
 		tr->call();
 	}
 
-	void save(saver*s){if(_init)_master->save(s); _init=false;}
-	void restore(restorer*r){if(_init)_master->restore(r); _init=false;}
+	void save(saver*s){if(_init)_bag->save(s); _init=false;}
+	void restore(restorer*r){if(_init)_bag->restore(r); _init=false;}
 	friend void save_adapter(actor*a, saver*s){((worker*)a)->save(s);}
 	friend void restore_adapter(actor*a, restorer*r){((worker*)a)->restore(r);}
 
+	bag* _bag;
 	bool _init;
-	master* _master;
 };
 
-struct bag : engine{
-	bag(int argc, char *argv[]){
-		::init(this, argc, argv);
+inline bag::bag(int argc, char *argv[], int nproc) {
+	::init(&_engine, argc, argv);
+	::init(this, &_engine, recv_master);
 
-		bool is_shm = false;
+	if (nproc) _nworkers = nproc;
+	else{
+#ifdef TET_MPI_EXEC
 		_nworkers = ::nodes(this);
-
-		if (_nworkers == 1){
-			is_shm = true;
-			_nworkers = std::thread::hardware_concurrency();
-		}
-
-		_messages = new task_result*[_nworkers];
-		_master = new master(this);
-		_workers = new worker*[_nworkers];
-
-		for (int i = 0; i < _nworkers; i++){
-			_workers[i] = new worker(this,_master);
-			_messages[i] = new task_result(this,_master,_workers[i]);
-		}
-
-		if (!is_shm){
-			::at(_master, 0);
-			for (int i = 0; i < _nworkers; i++)	::at(_workers[i], i);
-		}
+#else 
+		_nworkers = std::thread::hardware_concurrency();
+#endif
 	}
 
-	~bag(){
-		for (int i = 0; i < _nworkers; i++){delete _workers[i]; delete _messages[i];}
+	_messages = new task_result*[_nworkers];
+	_workers = new worker*[_nworkers];
 
-		delete[] _messages;
-		delete _master;
-		delete[] _workers;
+	for (int i = 0; i < _nworkers; i++){
+		_workers[i] = new worker(&_engine,this);
+		_messages[i] = new task_result(&_engine,this,_workers[i]);
 	}
 
-	void run(){	::map(this); ::run(this); }
+#ifdef TET_MPI_EXEC
+	::at(this, 0);
+	for (int i = 0; i < _nworkers; i++)	::at(_workers[i], i);
+#endif
 
-	task_result** _messages;
-	master* _master;
-	worker** _workers;
-	int _nworkers;
-};
+	for (int i = 0; i < _nworkers; i++)_messages[i]->call();
+	_active = _nworkers;
+}
+
+inline bag::~bag(){
+	for (int i = 0; i < _nworkers; i++){delete _workers[i]; delete _messages[i];}
+	delete[] _messages;
+	delete[] _workers;
+}
 
 /*$TET$footer*/
 /*$TET$*/

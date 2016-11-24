@@ -53,7 +53,7 @@ namespace TEMPLET{
 #include <vector>
 #include <assert.h>
 
-#ifdef TET_DEBUG_SERIAL
+#ifdef TET_DEBUG_SERIALIZATION
 
 #include <memory.h>
 #define ALLOC_SIZE		4096
@@ -65,7 +65,7 @@ namespace TEMPLET{
 	struct actor{
 		void(*_recv)(actor*,message*,int tag);
 		engine* _engine;
-#ifdef TET_DEBUG_SERIAL
+#ifdef TET_DEBUG_SERIALIZATION
 		void(*_save)(actor*,saver*);
 		void(*_restore)(actor*,restorer*);
 #endif
@@ -74,14 +74,14 @@ namespace TEMPLET{
 	struct message{
 		actor* _actor;
 		bool _sending;
-#ifdef TET_DEBUG_SERIAL
+#ifdef TET_DEBUG_SERIALIZATION
 		void(*_save)(message*,saver*);
 		void(*_restore)(message*,restorer*);
 #endif
 		int _tag;
 	};
 
-#ifdef TET_DEBUG_SERIAL
+#ifdef TET_DEBUG_SERIALIZATION
 	struct saver{ engine*_engine; };
 	struct restorer{ engine*_engine; };
 #endif
@@ -89,7 +89,7 @@ namespace TEMPLET{
 	struct engine{
 		std::vector<message*> _ready;
 		bool _stop;
-#ifdef TET_DEBUG_SERIAL
+#ifdef TET_DEBUG_SERIALIZATION
 		void* _buffer;
 		size_t _buffer_size;
 		size_t _buffer_cursor;
@@ -101,7 +101,7 @@ namespace TEMPLET{
 	inline void init(actor*a, engine*e, void(*recv)(actor*, message*, int tag), void(*save)(actor*, saver*), void(*restore)(actor*, restorer*))
 	{
 		a->_recv = recv; a->_engine = e;
-#ifdef TET_DEBUG_SERIAL
+#ifdef TET_DEBUG_SERIALIZATION
 		a->_save = save; 
 		a->_restore = restore;
 #endif
@@ -114,7 +114,7 @@ namespace TEMPLET{
 	inline void init(message*m, engine*e, void(*save)(message*,saver*), void(*restore)(message*, restorer*))
 	{
 		m->_sending = false; m->_actor = 0; m->_tag = 0;
-#ifdef TET_DEBUG_SERIAL
+#ifdef TET_DEBUG_SERIALIZATION
 		m->_save = save;
 		m->_restore = restore;
 #endif
@@ -156,7 +156,7 @@ namespace TEMPLET{
 			message* m = *it; e->_ready.erase(it); m->_sending = false;
 			actor* a = m->_actor;
 
-#ifdef TET_DEBUG_SERIAL
+#ifdef TET_DEBUG_SERIALIZATION
 			if (m->_save){
 				e->_buffer_cursor = 0;
 				m->_save(m,&e->_saver);
@@ -839,7 +839,7 @@ namespace TEMPLET{
 }
 #endif
 
-#if (defined(TET_DEBUG_SERIAL) && defined(TET_DEBUG_EXEC)) || defined(TET_MPI_EXEC)
+#if (defined(TET_DEBUG_SERIALIZATION) && defined(TET_DEBUG_EXEC)) || defined(TET_MPI_EXEC)
 
 namespace TEMPLET{
 	inline void init_buffer(engine*e)

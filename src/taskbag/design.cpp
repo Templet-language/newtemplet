@@ -15,13 +15,14 @@
 /*  limitations under the License.                                          */
 /*--------------------------------------------------------------------------*/
 #include <iostream>
+#define TET_DEBUG_SERIALIZATION
 #include <templet.hpp>
 
 // параллельное умножение матриц
 // с использованием портфеля задач
 
-const int P = 10;//число рабочих процессов (используется только в TEMPLET::stat)
-const int N = 10;
+const int P = 10; // число рабочих процессов (используется только для прогноза ускорения)
+const int N = 1000;
 double A[N][N], B[N][N], C[N][N];
 
 using namespace std;
@@ -35,14 +36,14 @@ struct task{
 	void save(saver*s){
 /*$TET$task$save*/
 		::save(s, &num, sizeof(num)); // строка num
-		::save(s, &A[num], sizeof(double)*N); // матрицы A
+		::save(s, &A[num][0], sizeof(double)*N); // матрицы A
 /*$TET$*/
 	}
 // restore the task state on a worker process
 	void restore(restorer*r){
 /*$TET$task$restore*/
 		::restore(r, &num, sizeof(num)); // строка num
-		::restore(r, &A[num], sizeof(double)*N); // матрицы A
+		::restore(r, &A[num][0], sizeof(double)*N); // матрицы A
 /*$TET$*/
 	}
 /*$TET$task$data*/
@@ -56,14 +57,14 @@ struct result{
 	void save(saver*s){
 /*$TET$result$save*/
 		::save(s, &num, sizeof(num)); // строка num 
-		::save(s, &C[num], sizeof(double)*N); // матрицы C
+		::save(s, &C[num][0], sizeof(double)*N); // матрицы C
 /*$TET$*/
 	}
 // restore the result on the master process
 	void restore(restorer*r){
 /*$TET$result$restore*/
 		::restore(r, &num, sizeof(num)); // строка num 
-		::restore(r, &C[num], sizeof(double)*N); // матрицы C
+		::restore(r, &C[num][0], sizeof(double)*N); // матрицы C
 /*$TET$*/
 	}
 /*$TET$result$data*/
@@ -73,16 +74,15 @@ struct result{
 
 // states and methods of the master process
 struct bag{
-	bag(int argc, char *argv[]){
-/*$TET$bag$init*/
-		cur = 0; // начинаем вычисление с нулевой строки
-/*$TET$*/
-	}
+	bag(int argc, char *argv[]);
 	void run();
+	void delay();// use delay(..) to spec 'get' or/and 'put' time in logical units
+	double speedup();// speedup estimation
 	
 // task extraction method, if there is no task - it returns false
 	bool get(task*t){
 /*$TET$bag$get*/
+		delay(0.10);
 		if (cur<N){ t->num = cur++; return true; }
 		else return false;
 /*$TET$*/
@@ -96,13 +96,13 @@ struct bag{
 // saving worker processes common state method
 	void save(saver*s){
 /*$TET$bag$save*/
-		::save(s, &B, sizeof(double)*N*N); // матрица B
+		::save(s, &B[0][0], sizeof(double)*N*N); // матрица B
 /*$TET$*/
 	}
 //  restoring worker processes common state method
 	void restore(restorer*r){
 /*$TET$bag$restore*/
-		::restore(r, &B, sizeof(double)*N*N); // матрица B 
+		::restore(r, &B[0][0], sizeof(double)*N*N); // матрица B 
 /*$TET$*/
 	}
 /*$TET$bag$data*/
@@ -110,10 +110,13 @@ struct bag{
 /*$TET$*/
 };
 
+void delay(double);// use delay(..) to spec 'proc' time in logical units
+
 // worker process task execution procedure
 void proc(task*t,result*r)
 {
 /*$TET$proc$data*/
+	delay(1.00);
 	int i = r->num = t->num;
 	for (int j = 0; j<N; j++){// параллельное вычисление строки матрицы C
 		C[i][j] = 0.0;
@@ -125,7 +128,8 @@ void proc(task*t,result*r)
 /*$TET$footer*/
 int main(int argc, char* argv[])
 {
-	bag b(argc, argv);
+	bag b(argc, argv, P);
+	b.cur = 0; // начинаем вычисление с нулевой строки
 
 	// инициализация матриц
 	for (int i = 0; i<N; i++){
@@ -134,8 +138,14 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	// параллельное умножение матриц
+	// параллельное умножение матриц c замером времени
+	auto start = std::chrono::high_resolution_clock::now();
 	b.run();
+	auto end = std::chrono::high_resolution_clock::now();
+
+	std::cout << "multiplication time is "
+		<< (double)std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000000
+		<< " seconds\n";
 
 	// проверяем результат
 	for (int i = 0; i < N; i++){
@@ -146,6 +156,10 @@ int main(int argc, char* argv[])
 			}
 		}
 	}
+	
+	// узнаём прогноз ускорения алгоритма (Smax), если накладные расходы составляют 10% от времени вычисления 
+	double Smax;
+	if ((Smax = b.speedup())>0.0) std::cout << "Smax = " << Smax << " (if use " << P << " workers)";
 
 	return EXIT_SUCCESS;
 }
