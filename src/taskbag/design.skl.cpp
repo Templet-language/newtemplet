@@ -1,52 +1,43 @@
 /*$TET$header*/
-	// TODO: place additional headers and other stuff here
 #include <templet.hpp>
-	//	is often needed
-// options:
-//  -- use or do not use comments
-//  -- language (if use comments)
-//  -- DM or SHM deployment
-//  -- copy or do not copy common state to workers (if DM deployment)
-//  -- use or do not use 'put' method
-//  -- use or do not use 'empty' method
-//  -- use or do not use 'delay' method
+// TODO: place additional headers and other stuff here
 /*$TET$*/
 
 using namespace TEMPLET;
 
-// the task state
 struct task{
-// saving the tasks before sending to a worker process
 	void save(saver*s){
 /*$TET$task$save*/
+	// the task state
+	// save -- saving the task before sending it to a worker process
 	// TODO: define serialization code here
 	// with ::save(s, &data, sizeof(data)); calls
 /*$TET$*/
 	}
-// restore the task state on a worker process
 	void restore(restorer*r){
 /*$TET$task$restore*/
+	// restore -- restoring the task state on a worker process
 	// TODO: define deserialization code here
 	// with ::restore(r, &data, sizeof(data)); calls
 /*$TET$*/
 	}
 /*$TET$task$data*/
-	// TODO: define task data here
+	// TODO: define task's data here
 /*$TET$*/
 };
 
-// the result of task execution
 struct result{
-// save the result before sending to the master process
 	void save(saver*s){
 /*$TET$result$save*/
+	// the result of the task execution
+	// save -- saving the result before sending it to the master process
 	// TODO: define serialization code here
 	// with ::save(s, &data, sizeof(data)); calls
 /*$TET$*/
 	}
-// restore the result on the master process
 	void restore(restorer*r){
 /*$TET$result$restore*/
+	// restore -- restoring the result on the master process
 	// TODO: define deserialization code here
 	// with ::restore(r, &data, sizeof(data)); calls
 /*$TET$*/
@@ -56,36 +47,38 @@ struct result{
 /*$TET$*/
 };
 
-// states and methods of the master process
 struct bag{
 	bag(int argc, char *argv[]);
 	void run();
-	void delay();// use delay(..) to spec 'get' or/and 'put' time in logical units
-	double speedup();// speedup estimation
-	
-// task extraction method, if there is no task - it returns false
+	void delay();
+	double speedup();
+
 	bool get(task*t){
 /*$TET$bag$get*/
+	// states and methods of the master process
+	// use delay(..) to spec 'get' or/and 'put' time in logical units
+	// 'speedup();' is a speedup estimation
+	// get -- task extraction method, if there is no task - it returns false
 	// TODO: define getting a task from the the bag code (if return false -- no task have got) 
 /*$TET$*/	
 	}
-// placing the result method
 	void put(result*r){
 /*$TET$bag$put*/
+	// put -- placing the result back to the bag
 	// TODO: define putting result to the bag code
 /*$TET$*/	
 	}
-// saving worker processes common state method
 	void save(saver*s){
 /*$TET$bag$save*/
+	// save -- saving worker processes common state method
 	// TODO: define serialization code here
 	// with ::save(s, &data, sizeof(data)); calls
 	// to copy a part of the master process state to all worker processes
 /*$TET$*/
 	}
-//  restoring worker processes common state method
 	void restore(restorer*r){
 /*$TET$bag$restore*/
+	// restore -- restoring worker processes common state method
 	// TODO: define deserialization code here
 	// with ::restore(r, &data, sizeof(data)); calls
 	// to copy a part of the master process state to all worker processes
@@ -96,13 +89,14 @@ struct bag{
 /*$TET$*/	
 };
 
-void delay(double);// use delay(..) to spec 'proc' time in logical units
+void delay(double);
 
-// worker process task execution procedure
 void proc(task*t,result*r)
 {
 /*$TET$proc$data*/
+	// proc -- task execution procedure of a worker process 
 	// TODO: define task processing code here
+	// use delay(..) to spec 'proc' execution time in logical units
 /*$TET$*/
 }
 
@@ -110,8 +104,9 @@ void proc(task*t,result*r)
 	// TODO: define you program entry point
 	// int main(int argc, char *argv[])
 	// including
-	// 1) creating the bag object
-	// 2) input code
-	// 3) run with bag.run()
-	// 4) output code
+	// 1) the bag object creation
+	// 2) an input code
+	// 3) program run with a bag.run()
+	// 4) an output code
+	// 5) optional speedup estimation code
 /*$TET$*/

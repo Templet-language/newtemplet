@@ -30,16 +30,13 @@ using namespace std;
 
 using namespace TEMPLET;
 
-// the task state
 struct task{
-// saving the tasks before sending to a worker process
 	void save(saver*s){
 /*$TET$task$save*/
 		::save(s, &num, sizeof(num)); // строка num
 		::save(s, &A[num][0], sizeof(double)*N); // матрицы A
 /*$TET$*/
 	}
-// restore the task state on a worker process
 	void restore(restorer*r){
 /*$TET$task$restore*/
 		::restore(r, &num, sizeof(num)); // строка num
@@ -51,16 +48,13 @@ struct task{
 /*$TET$*/
 };
 
-// the result of task execution
 struct result{
-// save the result before sending to the master process
 	void save(saver*s){
 /*$TET$result$save*/
 		::save(s, &num, sizeof(num)); // строка num 
 		::save(s, &C[num][0], sizeof(double)*N); // матрицы C
 /*$TET$*/
 	}
-// restore the result on the master process
 	void restore(restorer*r){
 /*$TET$result$restore*/
 		::restore(r, &num, sizeof(num)); // строка num 
@@ -72,14 +66,12 @@ struct result{
 /*$TET$*/
 };
 
-// states and methods of the master process
 struct bag{
 	bag(int argc, char *argv[]);
 	void run();
-	void delay();// use delay(..) to spec 'get' or/and 'put' time in logical units
-	double speedup();// speedup estimation
-	
-// task extraction method, if there is no task - it returns false
+	void delay();
+	double speedup();
+
 	bool get(task*t){
 /*$TET$bag$get*/
 		delay(0.10);
@@ -87,19 +79,16 @@ struct bag{
 		else return false;
 /*$TET$*/
 	}
-// placing the result method
 	void put(result*r){
 /*$TET$bag$put*/
 // в этом примере не требует определения
 /*$TET$*/
 	}
-// saving worker processes common state method
 	void save(saver*s){
 /*$TET$bag$save*/
 		::save(s, &B[0][0], sizeof(double)*N*N); // матрица B
 /*$TET$*/
 	}
-//  restoring worker processes common state method
 	void restore(restorer*r){
 /*$TET$bag$restore*/
 		::restore(r, &B[0][0], sizeof(double)*N*N); // матрица B 
@@ -110,9 +99,8 @@ struct bag{
 /*$TET$*/
 };
 
-void delay(double);// use delay(..) to spec 'proc' time in logical units
+void delay(double);
 
-// worker process task execution procedure
 void proc(task*t,result*r)
 {
 /*$TET$proc$data*/
