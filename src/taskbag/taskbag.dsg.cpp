@@ -48,9 +48,9 @@ struct result{
 };
 
 struct bag{
-	bag(int argc, char *argv[]);
+	bag(int argc, char *argv[], int P=0);
 	void run();
-	void delay();
+	void delay(double);
 	double speedup();
 
 	bool get(task*t){
