@@ -9,6 +9,33 @@
 #pragma templet '~' id ['@'] [ '(' ['-'] id ('!'|'?') {',' ['-'] id ('!'|'?')} ')' ] ['=']
 #pragma templet '*' id ['@'] [ '(' ('?'| id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']
 
+struct submessage{
+  string name;
+  bool dummy;
+  enum {CALL,ANSWER} type;
+}
+
+struct message{
+  string name;
+  bool duplex;
+  bool serilizable;
+  list <submessage> subm;
+};
+
+struct port{
+  string name;
+  string message_name;
+  enum {SERVER,CLIENT} type;
+};
+
+struct actor{
+  string name;
+  bool serilizable;
+  bool initially_active;
+  bool response_any;
+  list<port> ports;
+};
+
 1) bool openparse(string&name, string&pragma);
 // открыть файл для разбора по имени,
 // pragma – обрабатывать только заданные прагмы, например, #pragma omp
