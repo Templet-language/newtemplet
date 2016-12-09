@@ -1,0 +1,7 @@
+#pragma templet ~message1 
+#pragma templet ~message2 =
+#pragma templet ~message3@(submessage1?,submessage2!,submessage3!,-submessage4?) =
+
+#pragma templet *actor1
+#pragma templet *actor2 +
+#pragma templet *actor3@(?,port1?message2,port3!message4) +

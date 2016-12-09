@@ -5,6 +5,12 @@ VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vs2013", "vs2013.vcxproj", "{CB90720A-ED88-41EA-BC2B-F043E12D7930}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B62180AC-EA0B-4749-895F-BA2DE3BF5419}"
+	ProjectSection(SolutionItems) = preProject
+		..\out.txt = ..\out.txt
+		..\test.txt = ..\test.txt
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32

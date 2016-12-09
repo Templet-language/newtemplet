@@ -1,0 +1,6 @@
+#pragma ~message1
+#pragma ~message2=
+#pragma ~message3@(submessage1!,submessage2?,submessage3?,-submessage4!)
+#pragma ~actor1
+#pragma ~actor2+
+#pragma ~actor3@(?,port1?message2,port3!message4)+

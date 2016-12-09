@@ -77,6 +77,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\gen.cpp" />
+    <ClCompile Include="..\lexer.cpp" />
+    <ClCompile Include="..\parse.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
