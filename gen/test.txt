@@ -5,3 +5,40 @@
 #pragma templet *actor1
 #pragma templet *actor2 +
 #pragma templet *actor3@(?,port1?message2,port3!message4) +
+
+#pragma templet ~m(argsin2?,argcos2?,res!)
+struct m{
+	struct argsin{};
+	struct argcos{};
+	struct res{};
+};
+
+#pragma templet *master@(p1!m,p2!m)+
+struct master{
+	void init(){	}
+	void p1(m&){	}
+	void p2(m&){	}
+
+	m* p1();
+	m* p2();
+
+	m*_p1;
+	m*_p2;
+};
+
+void templet(){
+	actor master("master");
+	master.serilizable()
+		.port("p1",OUT,"m")
+		.port("p2",OUT,"m")
+		.start();
+}
+
+struct master:actor{
+	void def(){
+		serilizable();
+		port("p1",OUT,"m");
+		port("p2",OUT,"m");
+		start();
+	}
+};
