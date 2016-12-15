@@ -8,22 +8,47 @@
 
 #pragma templet ~m(argsin2?,argcos2?,res!)
 struct m{
-	struct argsin{};
-	struct argcos{};
-	struct res{};
+	enum {MES_m};
+	enum tag{NA, TAG_argsin, TAG_argcos, TAG_res};
+
+	struct argsin{
+	} _argsin;
+	
+	struct argcos{
+	} _argcos;
+	
+	struct res{
+	} _res;
 };
 
-#pragma templet *master@(p1!m,p2!m)+
+#pragma templet ~sm
+struct sm{
+	enum {MES_sm};
+	void send(actor*);
+	bool access(actor*);
+};
+
+#pragma templet ~ping=
+struct ping{
+	enum {MES_ping};	
+};
+ 
+#pragma templet *master@(?,p1!m,p2?ping)+
 struct master{
-	void init(){	}
-	void p1(m&){	}
-	void p2(m&){	}
-
+	void init(){	} // +
+	void recv(message*m, int tag){} // ?, call this if 'void recv(int)' was not called
+	void recv(int tag){}
+	
 	m* p1();
-	m* p2();
+	void p2(ping*);
 
+	void   p1_send(m::tag);
+	m::tag p1_access();
 	m*_p1;
-	m*_p2;
+	
+	void p2_send();
+	bool p2_access();
+	ping*_p2;
 };
 
 void templet(){
