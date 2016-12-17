@@ -24,20 +24,20 @@ using namespace std;
 
 /*
 Syntax:
-#pragma templet '~' id ['@'] [ '(' ['-'] id ('!'|'?') {',' ['-'] id ('!'|'?')} ')' ] ['=']
+#pragma templet '~' id ['$'] [ '(' ['-'] id ('!'|'?') {',' ['-'] id ('!'|'?')} ')' ] ['=']
 
 Samples:
 #pragma templet ~message
 #pragma templet ~message =
-#pragma templet ~message@(submessage1?,submessage2!,submessage3!,-submessage4?)
+#pragma templet ~message$(submessage1?,submessage2!,submessage3!,-submessage4?)
 
 Syntax:
-#pragma templet '*' id ['@'] [ '(' ('?'| id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']
+#pragma templet '*' id ['$'] [ '(' ('?'| id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']
 
 Samples:
 #pragma templet *actor
 #pragma templet *actor +
-#pragma templet *actor@(?,port?message,port!message) +
+#pragma templet *actor$(?,port?message,port!message) +
 */
 
 struct submessage{
@@ -97,7 +97,7 @@ bool parse_message(int line, message& m)
 
 	m.name = lex;
 	
-	if (getlex(lex) && lex == "@"){ m.serilizable = true; }
+	if (getlex(lex) && lex == "$"){ m.serilizable = true; }
 	else{ ungetlex(); m.serilizable = false; }
 	
 	if (getlex(lex) && lex == "("){
@@ -158,7 +158,7 @@ bool parse_actor(int line, actor& a)
 
 	a.name = lex;
 
-	if (getlex(lex) && lex == "@"){ a.serilizable = true; }
+	if (getlex(lex) && lex == "$"){ a.serilizable = true; }
 	else{ ungetlex(); a.serilizable = false; }
 
 	if (getlex(lex) && lex == "("){
@@ -223,7 +223,7 @@ void print_message(ostream& s, message& m)
 	bool comma = false;
 
 	s << "~" << m.name;
-	if (m.serilizable) s << "@";
+	if (m.serilizable) s << "$";
 
 	if (m.subm.size()){
 		s << "(";
@@ -247,8 +247,8 @@ void print_actor(ostream&s,actor&a)
 {
 	bool comma = false;
 
-	s << "~" << a.name;
-	if (a.serilizable) s << "@";
+	s << "*" << a.name;
+	if (a.serilizable) s << "$";
 
 	if (a.ports.size()){
 		s << "(";
@@ -271,14 +271,165 @@ void print_actor(ostream&s,actor&a)
 	if (a.initially_active) s << "+";
 }
 
+void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
+{
+	outf << "/*$TET$header*/\n"
+		"/*$TET$*/\n";
+
+	outf << endl;
+
+	outf << "using namespace TEMPLET;\n\n"
+		"class my_engine{\n"
+		"public:\n"
+		"\tmy_engine(int argc, char *argv[]);\n"
+		"\tvoid run();\n"
+		"\tvoid map();\n"
+		"};\n";
+
+	outf << endl;
+
+	for (message& m : mlist){
+		outf << "#pragma templet "; print_message(outf, m); outf << endl;
+		outf << "struct " << m.name << "{\n";
+
+		if (!m.subm.empty()){
+			bool first = true;
+			outf << "\tenum tag{";
+			for (auto& x : m.subm){
+				if (first){ outf << "TAG_" << x.name; first = false; }
+				else outf << ",TAG_" << x.name;
+			}
+			outf << "};\n";
+
+			outf << endl;
+
+			for (auto& x : m.subm){
+				if (!x.dummy){
+					outf << "\tstruct " << x.name << "{\n";
+					outf << "/*$TET$" << m.name << "$" << x.name << "*/\n"
+						"/*$TET$*/\n";
+					outf << "\t} _" << x.name << ";\n\n";
+				}
+			}
+
+			outf << "\tvoid send(tag);\n";
+			outf << "\tbool access(tag);\n";
+		}
+		else{
+			if (m.duplex){
+				outf << "\tvoid send();\n";
+				outf << "\tbool access();\n";
+			}
+			else{
+				outf << "\tvoid send(actor*);\n";
+				outf << "\tbool access();\n";
+			}
+		}
+
+		if (m.serilizable){
+			outf << endl;
+			outf << "\tvoid save(saver*s){\n"
+				"/*$TET$" << m.name << "$$save*/\n"
+				"\t\t//::save(s, &x, sizeof(x));\n"
+				"/*$TET$*/\n"
+				"\t}\n\n"
+				"\tvoid restore(restorer*r)\n"
+				"/*$TET$" << m.name << "$$restore*/\n"
+				"\t\t//::restore(r, &x, sizeof(x));\n"
+				"/*$TET$*/\n"
+				"\t}\n";
+		}
+
+		if (m.subm.empty()){
+			outf << endl;
+			outf << "/*$TET$" << m.name << "$$data*/\n"
+				"/*$TET$*/\n";
+		}
+
+		outf << "};\n\n";
+	}
+
+	for (actor& a : alist){
+		outf << "#pragma templet "; print_actor(outf, a); outf << endl;
+		outf << "struct " << a.name << "{\n";
+
+		outf << "\t" << a.name << "(my_engine&){\n"
+			"/*$TET$" << a.name << "$" << a.name << "*/\n"
+			"/*$TET$*/\n"
+			"\t}\n\n"
+
+			"\tvoid delay(double);\n"
+			"\tvoid at(int);\n"
+			"\tvoid stop();\n";
+
+		if (a.initially_active){
+			outf << endl;
+			outf << "\tvoid start(){\n"
+				"/*$TET$" << a.name << "$start*/\n"
+				"/*$TET$*/\n"
+				"\t}\n";
+		}
+
+		if (a.response_any){
+			for (auto &m : mlist){
+				if (m.subm.empty() && !m.duplex){
+					outf << endl;
+					outf << "\tvoid recv_" << m.name << "(" << m.name << "&m){\n"
+						"/*$TET$" << a.name << "$recv_" << m.name << "*/\n"
+						"/*$TET$*/\n"
+						"\t}\n";
+				}
+			}
+		}
+
+		for (auto &p : a.ports){
+			outf << endl;
+			outf << "\tvoid " << p.name << "(" << p.message_name << "&m){\n"
+				"/*$TET$" << a.name << "$" << p.name << "*/\n"
+				"/*$TET$*/\n"
+				"\t}\n";
+		}
+
+		if (a.serilizable){
+			outf << endl;
+			outf << "\tvoid save(saver*s){\n"
+				"/*$TET$" << a.name << "$$save*/\n"
+				"\t\t//::save(s, &x, sizeof(x));\n"
+				"/*$TET$*/\n"
+				"\t}\n\n"
+				"\tvoid restore(restorer*r)\n"
+				"/*$TET$" << a.name << "$$restore*/\n"
+				"\t\t//::restore(r, &x, sizeof(x));\n"
+				"/*$TET$*/\n"
+				"\t}\n";
+		}
+
+		outf << endl;
+		outf << "/*$TET$" << a.name << "$$code&data*/\n"
+			"/*$TET$*/\n";
+
+		if (!a.ports.empty()){
+			outf << endl;
+			for (auto& x : a.ports){
+				if (x.type == port::CLIENT)outf << "\t" << x.message_name << " _" << x.name << ";" << endl;
+			}
+		}
+
+		outf << "};\n\n";
+	}
+
+	outf << "/*$TET$footer*/\n"
+		"/*$TET$*/\n";
+}
+
 int main(int argc, char *argv[])
 {
 	if (argc<3){
 		cout << "Templet skeleton generator. Copyright Sergei Vostokin, 2016" << endl << endl
 			<< "Usage: gen <input file with the templet markup> <skeleton output file>" << endl << endl
 			<< "The Templet markup syntax:" << endl << endl
-			<< "#pragma templet '~' id ['@'] \n\t [ '(' ['-'] id ('!'|'?') {',' ['-'] id ('!'|'?')} ')' ] ['=']" << endl
-			<< "#pragma templet '*' id ['@'] \n\t [ '(' ('?'| id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']";
+			<< "#pragma templet '~' id ['$'] \n\t [ '(' ['-'] id ('!'|'?') {',' ['-'] id ('!'|'?')} ')' ] ['=']" << endl
+			<< "#pragma templet '*' id ['$'] \n\t [ '(' ('?'| id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']";
 		return EXIT_FAILURE;
 	}
 
@@ -301,6 +452,8 @@ int main(int argc, char *argv[])
 		cout << pragma << endl;
 
 		lexinit(pragma);
+		act.ports.clear();
+		msg.subm.clear();
 
 		if (parse_message(line, msg))
 			mlist.push_back(msg);
@@ -317,13 +470,7 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	for (message& m : mlist){
-		outf << "#pragma "; print_message(outf, m); outf << endl;
-	}
-
-	for (actor& a : alist){
-		outf << "#pragma "; print_actor(outf, a); outf << endl;
-	}
+	design(outf,mlist,alist);
 
 	closeparse();
 

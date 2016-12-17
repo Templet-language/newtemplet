@@ -1,10 +1,10 @@
 #pragma templet ~message1 
 #pragma templet ~message2 =
-#pragma templet ~message3@(submessage1?,submessage2!,submessage3!,-submessage4?) =
+#pragma templet ~message3$(submessage1?,submessage2!,submessage3!,-submessage4?) =
 
 #pragma templet *actor1
 #pragma templet *actor2 +
-#pragma templet *actor3@(?,port1?message2,port3!message4) +
+#pragma templet *actor3$(?,port1?message2,port3!message4) +
 
 #pragma templet ~m(argsin2?,argcos2?,res!)
 struct m{
@@ -28,24 +28,23 @@ struct sm{
 	bool access(actor*);
 };
 
-#pragma templet ~ping=
+#pragma templet ~ping$=
 struct ping{
 	enum {MES_ping};	
 };
  
-#pragma templet *master@(?,p1!m,p2?ping)+
+#pragma templet *master$(?,p1!m,p2?ping)+
 struct master{
 	void init(){	} // +
 	void recv(message*m, int tag){} // ?, call this if 'void recv(int)' was not called
 	void recv(int tag){}
-	
-	m* p1();
-	void p2(ping*);
 
+	m* p1();
 	void   p1_send(m::tag);
 	m::tag p1_access();
 	m*_p1;
-	
+
+	void p2(ping*);	
 	void p2_send();
 	bool p2_access();
 	ping*_p2;
