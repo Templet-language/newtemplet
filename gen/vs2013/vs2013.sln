@@ -7,8 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "vs2013", "vs2013.vcxproj", 
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B62180AC-EA0B-4749-895F-BA2DE3BF5419}"
 	ProjectSection(SolutionItems) = preProject
-		..\out.txt = ..\out.txt
-		..\test.txt = ..\test.txt
+		..\in.txt = ..\in.txt
+		..\out.cpp = ..\out.cpp
 	EndProjectSection
 EndProject
 Global

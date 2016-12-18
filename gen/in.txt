@@ -33,7 +33,7 @@ struct ping{
 	enum {MES_ping};	
 };
  
-#pragma templet *master$(?,p1!m,p2?ping)+
+#pragma templet *master$(?,p1!m,p2?ping,p3!m)+
 struct master{
 	void init(){	} // +
 	void recv(message*m, int tag){} // ?, call this if 'void recv(int)' was not called

@@ -274,6 +274,7 @@ void print_actor(ostream&s,actor&a)
 void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 {
 	outf << "/*$TET$header*/\n"
+		"#include <templet.hpp>\n"
 		"/*$TET$*/\n";
 
 	outf << endl;
@@ -311,18 +312,18 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 					outf << "\t} _" << x.name << ";\n\n";
 				}
 			}
-
-			outf << "\tvoid send(tag);\n";
+			
 			outf << "\tbool access(tag);\n";
+			outf << "\tvoid send(tag);\n";
 		}
 		else{
 			if (m.duplex){
-				outf << "\tvoid send();\n";
 				outf << "\tbool access();\n";
+				outf << "\tvoid send();\n";
 			}
 			else{
+				outf << "\tbool access(actor*);\n";
 				outf << "\tvoid send(actor*);\n";
-				outf << "\tbool access();\n";
 			}
 		}
 
@@ -333,7 +334,7 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 				"\t\t//::save(s, &x, sizeof(x));\n"
 				"/*$TET$*/\n"
 				"\t}\n\n"
-				"\tvoid restore(restorer*r)\n"
+				"\tvoid restore(restorer*r){\n"
 				"/*$TET$" << m.name << "$$restore*/\n"
 				"\t\t//::restore(r, &x, sizeof(x));\n"
 				"/*$TET$*/\n"
@@ -361,6 +362,15 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			"\tvoid delay(double);\n"
 			"\tvoid at(int);\n"
 			"\tvoid stop();\n";
+
+		if (!a.ports.empty()) outf << endl;
+
+		for (auto& p:a.ports){
+			if (p.type == port::CLIENT)
+				outf << "\t" << p.message_name << "* " << p.name << "();\n";
+			else if (p.type == port::SERVER)
+				outf << "\tvoid " << p.name << "(" << p.message_name << "*);\n";
+		}
 
 		if (a.initially_active){
 			outf << endl;
@@ -397,7 +407,7 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 				"\t\t//::save(s, &x, sizeof(x));\n"
 				"/*$TET$*/\n"
 				"\t}\n\n"
-				"\tvoid restore(restorer*r)\n"
+				"\tvoid restore(restorer*r){\n"
 				"/*$TET$" << a.name << "$$restore*/\n"
 				"\t\t//::restore(r, &x, sizeof(x));\n"
 				"/*$TET$*/\n"
@@ -414,6 +424,326 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 				if (x.type == port::CLIENT)outf << "\t" << x.message_name << " _" << x.name << ";" << endl;
 			}
 		}
+
+		outf << "};\n\n";
+	}
+
+	outf << "/*$TET$footer*/\n"
+		"/*$TET$*/\n";
+}
+
+void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
+{
+	outf << "/*$TET$header*/\n"
+		"#include <templet.hpp>\n"
+		"/*$TET$*/\n";
+
+	outf << endl;
+
+	outf << "using namespace TEMPLET;\n\n"
+		"struct my_engine : engine{\n"
+		"\tmy_engine(int argc, char *argv[]){\n"
+		"\t\t::init(this, argc, argv);\n"
+		"\t}\n"
+		"\tvoid run(){ ::run(this); }\n"
+		"\tvoid map(){ ::map(this); }\n"
+		"};\n";
+
+	outf << endl;
+	
+	outf << "enum MES_TAGS{ ";
+	bool first = true;
+	for (auto& m:mlist){
+		if(!m.duplex){
+			if (first) first = false; else outf << ", ";
+			outf << "MES_" << m.name;
+		}
+	}
+	
+	if (mlist.empty()) outf << "START";
+	else outf << ", START";
+	
+	outf << " };\n";
+
+	outf << endl;
+
+	for (message& m : mlist){
+		outf << "#pragma templet "; print_message(outf, m); outf << endl;
+		outf << "struct " << m.name << " : messsage{\n";
+
+		if (m.duplex)	outf << "\t" << m.name << "(actor*a, engine*e, int t) : _where(CLI), _cli(a), _client_id(t){\n";
+		else outf << "\t" << m.name << "(actor*a, engine*e){\n";
+
+		if (m.serilizable)	outf <<	"\t\t::init(this, e, save_adapter, restore_adapter);\n";
+		else outf << "\t\t::init(this, e);\n";
+		
+		outf << "\t}\n";
+
+		if (m.serilizable){
+			outf << endl;
+
+			outf << "\tfriend void save_adapter(message*m, saver*s){\n"
+				"\t\t((value_message*)m)->save(s);\n"
+				"\t}\n\n"
+				"\tfriend void restore_adapter(message*m, restorer*r){\n"
+				"\t\t((value_message*)m)->restore(r);\n"
+				"\t}\n";
+		}
+
+		if (!m.subm.empty()){
+			outf << endl;
+
+			int tag_num = 0;
+			bool first = true;
+			
+			outf << "\tenum tag{";
+			for (auto& x : m.subm){
+				if (first){ outf << "TAG_" << x.name; first = false; }
+				else outf << ",TAG_" << x.name;
+			}
+			outf << "};\n";
+
+			bool printed = false;
+				
+			for (auto& x : m.subm){
+				if (!x.dummy){
+					if (!printed)outf << endl; else printed = true;
+					outf << "\tstruct " << x.name << "{\n";
+					outf << "/*$TET$" << m.name << "$" << x.name << "*/\n"
+						"/*$TET$*/\n";
+					outf << "\t} _" << x.name << ";\n\n";
+					printed = true;
+				}
+			}
+
+			if (!printed) outf << endl;
+
+			outf <<
+				"\tbool access(tag t){\n"
+				"\t\tbool ret;\n"
+				"\t\tif (_where == CLI) ret = ::access(this, _cli);\n"
+				"\t\telse if (_where == SRV) ret = ::access(this, _srv);\n"
+				"\t\treturn ret && t==_tag;\n"
+				"\t}\n\n"
+
+				"\tvoid send(tag t){\n"
+				"\t\t_tag = t;\n"
+				"\t\tif (_where == CLI){ ::send(this, _srv, _server_id); _where = SRV; }\n"
+				"\t\telse if (_where == SRV){ ::send(this, _cli, _client_id); _where = CLI; }\n"
+				"\t}\n";
+		}
+		else{
+			outf << endl;
+
+			if (m.duplex){
+			
+				outf <<
+				"\tbool access(){\n"
+					"\t\tbool ret;\n"
+					"\t\tif (_where == CLI) ret = ::access(this, _cli);\n"
+					"\t\telse if (_where == SRV) ret = ::access(this, _srv);\n"
+					"\t\treturn ret;\n"
+					"\t}\n\n"
+
+					"\tvoid send(){\n"
+					"\t\tif (_where == CLI){ ::send(this, _srv, _server_id); _where = SRV; }\n"
+					"\t\telse if (_where == SRV){ ::send(this, _cli, _client_id); _where = CLI; }\n"
+					"\t}\n";
+
+			}
+			else{
+				outf <<
+					"\tbool access(actor*a){\n"
+					"\t\treturn ::access(this, a);\n"
+					"\t}\n\n"
+
+					"\tvoid send(actor*a){\n"
+					"\t\t::send(this, a, MES_"<< m.name <<");\n"
+					"\t}\n";
+			}
+		}
+
+		if (m.serilizable){
+			outf << endl;
+			outf << "\tvoid save(saver*s){\n"
+				"/*$TET$" << m.name << "$$save*/\n"
+				"\t\t//::save(s, &x, sizeof(x));\n"
+				"/*$TET$*/\n"
+				"\t}\n\n"
+				"\tvoid restore(restorer*r){\n"
+				"/*$TET$" << m.name << "$$restore*/\n"
+				"\t\t//::restore(r, &x, sizeof(x));\n"
+				"/*$TET$*/\n"
+				"\t}\n";
+		}
+
+		if (m.subm.empty()){
+			outf << endl;
+			outf << "/*$TET$" << m.name << "$$data*/\n"
+				"/*$TET$*/\n";
+		}
+
+		if (m.duplex){
+			outf << endl;
+			outf <<
+				"\tenum { CLI, SRV } _where;\n"
+				"\tactor* _srv;\n"
+				"\tactor* _cli;\n"
+				"\tint _client_id;\n"
+				"\tint _server_id;\n";
+			if (!m.subm.empty()) outf << "\tint _tag;\n";
+		}
+		
+		outf << "};\n\n";
+	}
+
+	for (actor& a : alist){
+		outf << "#pragma templet "; print_actor(outf, a); outf << endl;
+		outf << "struct " << a.name << " : actor{\n";
+
+		if (!a.ports.empty()){
+			int tag_num = 0;
+			bool first = true;
+
+			outf << "\tenum tag{";
+			for (auto& x : a.ports){
+				if (a.response_any){
+					if (first){ outf << "TAG_" << x.name << "=MES_TAGS::START+" << ++tag_num; first = false; }
+					else outf << ",TAG_" << x.name << "=MES_TAGS::START+" << ++tag_num;
+				}
+				else{
+					if (first){ outf << "TAG_" << x.name; first = false; }
+					else outf << ",TAG_" << x.name;
+				}
+			}
+			outf << "};\n\n";
+		}
+
+		bool have_client_ports = false;
+		for (auto& x : a.ports)
+			if (x.type == port::CLIENT){ have_client_ports = true; break; };
+		
+		if (!have_client_ports)
+			outf << "\t" << a.name << "(my_engine&e){\n";
+		else{
+			outf << "\t" << a.name << "(my_engine&e):";
+			bool first = true;
+			for(auto& x : a.ports)
+				if (x.type == port::CLIENT){
+					if (first)first = false; else outf << ",";
+					outf << "_" << x.name << "(this, &e, TAG_" << x.name << ")";
+				};
+			outf << "{\n";
+		}
+
+		if(a.serilizable) outf << "\t\t::init(this, &e, recv_adapter, save_adapter, restore_adapter);\n";
+		else outf << "\t\t::init(this, &e, recv_adapter);\n";
+
+		if (a.initially_active){
+			outf << "\t\t::init(&_start, &e);\n"
+				"\t\t::send(&_start, this, MES_TAGS::START);\n";
+		}
+
+		outf <<
+			"/*$TET$" << a.name << "$" << a.name << "*/\n"
+			"/*$TET$*/\n"
+			"\t}\n\n";
+
+		if (a.serilizable){
+			outf <<
+				"\tfriend void save_adapter(actor*a, saver*s){\n"
+				"\t\t((" << a.name << "*)a)->save(s);\n"
+				"\t}\n\n"
+
+				"\tfriend void restore_adapter(actor*a, restorer*r){\n"
+				"\t\t((" << a.name << "*)a)->restore(r);\n"
+				"\t}\n\n";
+		}
+
+		outf <<
+			"\tvoid at(int _at){ ::at(this, _at); }\n"
+			"\tvoid delay(double t){ ::delay(this, t); }\n"
+			"\tvoid stop(){ ::stop(this); }\n";
+
+		if (!a.ports.empty()) outf << endl;
+
+		for (auto& p : a.ports){
+			if (p.type == port::CLIENT)
+				outf << "\t" << p.message_name << "* " << p.name << "(){return &_" << p.name << ";}\n";
+			else if (p.type == port::SERVER)
+				outf << "\tvoid " << p.name << "(" << p.message_name << "*m){m->_server_id=TAG_"<<p.name<<"; m->_srv=this;}\n";
+		}
+
+		outf << endl;
+
+		outf <<	"\tfriend void recv_adapter (actor*a, message*m, int tag){\n";
+		outf << "\t\tswitch(tag){\n";
+		
+		for (auto& m : mlist)
+			if (!m.duplex)	outf << "\t\t\tcase MES_TAGS::MES_" << m.name << ": ((" << a.name << "*)a)->recv_" << m.name << "(*((" << m.name << "*)m)); break;\n";
+	
+		for (auto& p : a.ports)
+			outf << "\t\t\tcase TAG_" << p.name << ": ((" << a.name << "*)a)->" << p.name << "(*((" << p.message_name << "*)m)); break;\n";
+		
+		if (a.initially_active) outf << "\t\t\tcase MES_TAGS::START: (("<< a.name <<"*)a)->start(); break;\n";
+		
+		outf << "\t\t}\n";
+		outf <<	"\t}\n";
+
+		if (a.initially_active){
+			outf << endl;
+			outf << "\tvoid start(){\n"
+				"/*$TET$" << a.name << "$start*/\n"
+				"/*$TET$*/\n"
+				"\t}\n";
+		}
+
+		if (a.response_any){
+			for (auto &m : mlist){
+				if (m.subm.empty() && !m.duplex){
+					outf << endl;
+					outf << "\tvoid recv_" << m.name << "(" << m.name << "&m){\n"
+						"/*$TET$" << a.name << "$recv_" << m.name << "*/\n"
+						"/*$TET$*/\n"
+						"\t}\n";
+				}
+			}
+		}
+
+		for (auto &p : a.ports){
+			outf << endl;
+			outf << "\tvoid " << p.name << "(" << p.message_name << "&m){\n"
+				"/*$TET$" << a.name << "$" << p.name << "*/\n"
+				"/*$TET$*/\n"
+				"\t}\n";
+		}
+
+		if (a.serilizable){
+			outf << endl;
+			outf << "\tvoid save(saver*s){\n"
+				"/*$TET$" << a.name << "$$save*/\n"
+				"\t\t//::save(s, &x, sizeof(x));\n"
+				"/*$TET$*/\n"
+				"\t}\n\n"
+				"\tvoid restore(restorer*r){\n"
+				"/*$TET$" << a.name << "$$restore*/\n"
+				"\t\t//::restore(r, &x, sizeof(x));\n"
+				"/*$TET$*/\n"
+				"\t}\n";
+		}
+
+		outf << endl;
+		outf << "/*$TET$" << a.name << "$$code&data*/\n"
+			"/*$TET$*/\n";
+
+		if (!a.ports.empty()){
+			outf << endl;
+			for (auto& x : a.ports){
+				if (x.type == port::CLIENT)outf << "\t" << x.message_name << " _" << x.name << ";" << endl;
+			}
+		}
+
+		if(a.initially_active) outf << "\tmessage _start;\n";
 
 		outf << "};\n\n";
 	}
@@ -470,7 +800,8 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	design(outf,mlist,alist);
+	//design(outf, mlist, alist);
+	deploy(outf, mlist, alist);
 
 	closeparse();
 
