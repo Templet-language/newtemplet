@@ -1,0 +1,41 @@
+1) rename /src --> /samples
+2) rename /doc --> /etc
+3) join /skel + /gen --> src
+4) add tetdef.hpp to /lib
+
+with
+
+extern list<message> mlist;
+extern list<actor> alist;
+
+namespace def
+{
+  class message{
+    public:
+      message(string n){_msg.name=n;_msg.duplex=false;_serilizible=false;}
+      message(){_msg.duplex=false;_serilizible=false;}
+      ~message(){mlist.push_back(_msg);}
+   public:   
+      message& name(string n){_msg.name;}
+      message& duplex(){_msg.duplex=true;}
+      message& serilizable(){_msg.serilizable=true;}
+      message& submessage(string n,::submessage::type t){submesssage sm; sm.name=n; sm.type=t; sm.dummy=false; _msg.push_back(sm);}
+      message& dummy(string n,::submessage::type t){submesssage sm; sm.name=n; sm.type=t; sm.dummy=true; _msg.push_back(sm);}
+    private:
+      ::message _msg;
+  };
+  class actor{
+    public:
+      actor(string n){_act.name=n; _act.serilizable=false; _act.initially_active=false; _act.response_any=false;}
+      actor(){_act.serilizable=false; _act.initially_active=false; _act.response_any=false;}
+      ~actor(){alist.push_back(_act);}
+    public:
+      actor& port(string n,::port::type t, string mn){::port p; p.name=n; p.message_name=mn; p.type=t; _act.push(p);}
+      ///////////////////////////////////
+    private:
+      ::actor _act;
+  };
+}
+
+5) add /pipeline 
+6) add /metaprog
