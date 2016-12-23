@@ -754,17 +754,29 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 
 int main(int argc, char *argv[])
 {
-	if (argc<3){
+	if (argc<4){
 		cout << "Templet skeleton generator. Copyright Sergei Vostokin, 2016" << endl << endl
-			<< "Usage: gen <input file with the templet markup> <skeleton output file>" << endl << endl
+			<< "Usage: gen (-deploy|-design) <input file with the templet markup> <skeleton output file>" << endl << endl
 			<< "The Templet markup syntax:" << endl << endl
 			<< "#pragma templet '~' id ['$'] \n\t [ '(' ['-'] id ('!'|'?') {',' ['-'] id ('!'|'?')} ')' ] ['=']" << endl
 			<< "#pragma templet '*' id ['$'] \n\t [ '(' ('?'| id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']";
 		return EXIT_FAILURE;
 	}
 
-	if (!openparse(string(argv[1]), string("templet"))){
-		cout << "ERROR: could not open file '" << argv[1] << "' for reading" << endl;
+	bool gen_deploy;
+	string arg1(argv[1]);
+
+	if (arg1 == "-deploy")
+		gen_deploy = true;
+	else if (arg1 == "-design")
+		gen_deploy = false;
+	else{
+		cout << "ERROR: the first parameter '" << arg1 << "' is invalid, -d or -r expected" << endl;
+		return EXIT_FAILURE;
+	}
+
+	if (!openparse(string(argv[2]), string("templet"))){
+		cout << "ERROR: could not open file '" << argv[2] << "' for reading" << endl;
 		return EXIT_FAILURE;
 	}
 
@@ -793,15 +805,17 @@ int main(int argc, char *argv[])
 			error(line);
 	}
 
-	ofstream outf(argv[2]);
+	ofstream outf(argv[3]);
 
 	if (!outf){
-		cout << "ERROR: could not open file '" << argv[2] << "' for writing" << endl;
+		cout << "ERROR: could not open file '" << argv[3] << "' for writing" << endl;
 		return EXIT_FAILURE;
 	}
 
-	//design(outf, mlist, alist);
-	deploy(outf, mlist, alist);
+	if(gen_deploy)
+		deploy(outf, mlist, alist);
+	else
+		design(outf, mlist, alist);
 
 	closeparse();
 

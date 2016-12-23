@@ -27,59 +27,65 @@ public:
 	void map();
 };
 
-class value_message{
-public:
+#pragma templet ~value_message$=
+struct value_message{
 	bool access();
 	void send();
-/*$TET$value_message$$data*/
-	double x;
-	enum {COS2,SIN2} task;
-/*$TET$*/
+
 	void save(saver*s){
 /*$TET$value_message$$save*/
 		::save(s, &x, sizeof(x));
 /*$TET$*/
-	}			
+	}
+
 	void restore(restorer*r){
 /*$TET$value_message$$restore*/
 		::restore(r, &x, sizeof(x)); 
 /*$TET$*/
 	}
+
+/*$TET$value_message$$data*/
+	double x;
+	enum {COS2,SIN2} task;
+/*$TET$*/
 };
 
-class master{
-public:
-	master(my_engine&);
+#pragma templet *master$(sin2_port!value_message,cos2_port!value_message)+
+struct master{
+	master(my_engine&){
+/*$TET$master$master*/
+/*$TET$*/
+	}
 
-	value_message& sin2_port();
-	value_message& cos2_port();
-	
 	void delay(double);
 	void at(int);
 	void stop();
 
+	value_message* sin2_port();
+	value_message* cos2_port();
+
 	void start(){
 /*$TET$master$start*/
-		_cos2.x = _sin2.x = x;
-		_cos2.task = value_message::COS2;
-		_sin2.task = value_message::SIN2;
-		_cos2.send(); _sin2.send();
+		_sin2_port.x = _cos2_port.x = x;
+		_cos2_port.task = value_message::COS2;
+		_sin2_port.task = value_message::SIN2;
+		_cos2_port.send(); _sin2_port.send();
 /*$TET$*/
 	}
 
-	void sin2_func(value_message&m){
-/*$TET$master$sin2_func*/
-		if (_cos2.access()){
-			x = _cos2.x + _sin2.x; delay(1.0);
+	void sin2_port(value_message&m){
+/*$TET$master$sin2_port*/
+		if (_cos2_port.access()){
+			x = _cos2_port.x + _sin2_port.x; delay(1.0);
 			stop();
 		}
 /*$TET$*/
 	}
 
-	void cos2_func(value_message&m){
-/*$TET$master$cos2_func*/
-		if (_sin2.access()){
-			x = _cos2.x + _sin2.x; delay(1.0);
+	void cos2_port(value_message&m){
+/*$TET$master$cos2_port*/
+		if (_sin2_port.access()){
+			x = _cos2_port.x + _sin2_port.x; delay(1.0);
 			stop();
 		}
 /*$TET$*/
@@ -90,27 +96,36 @@ public:
 		::save(s, &x, sizeof(x));
 /*$TET$*/
 	}
+
 	void restore(restorer*r){
 /*$TET$master$$restore*/
 		::restore(r, &x, sizeof(x)); 
 /*$TET$*/
 	}
 
-	value_message _cos2;
-	value_message _sin2;
-/*$TET$master$$data*/
+/*$TET$master$$code&data*/
 	double x;
 /*$TET$*/
+
+	value_message _sin2_port;
+	value_message _cos2_port;
 };
 
-class worker{
-public:
-	worker(my_engine&);
+#pragma templet *worker(master_port?value_message)
+struct worker{
+	worker(my_engine&){
+/*$TET$worker$worker*/
+/*$TET$*/
+	}
 
-	void master_port(value_message&);
+	void delay(double);
+	void at(int);
+	void stop();
 
-	void master_func(value_message&m){
-/*$TET$worker$master_func*/
+	void master_port(value_message*);
+
+	void master_port(value_message&m){
+/*$TET$worker$master_port*/
 		if (m.task == value_message::COS2){
 			m.x = cos(m.x)*cos(m.x); delay(1.0);
 			m.send();
@@ -122,8 +137,9 @@ public:
 /*$TET$*/
 	}
 
-	void at(int);
-	void delay(double);
+/*$TET$worker$$code&data*/
+/*$TET$*/
+
 };
 
 /*$TET$footer*/

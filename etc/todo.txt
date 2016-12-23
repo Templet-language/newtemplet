@@ -1,7 +1,7 @@
-1) rename /src --> /samples
-2) rename /doc --> /etc
-3) join /skel + /gen --> src
-4) add tetdef.hpp to /lib
+*1) rename /src --> /samples
+*2) rename /doc --> /etc
+*3) join /skel + /gen --> src
+*4) add tetdef.hpp to /lib
 
 with
 
@@ -37,5 +37,5 @@ namespace def
   };
 }
 
-5) add /pipeline 
-6) add /metaprog
+*5) add /pipeline 
+-6) add /metaprog
