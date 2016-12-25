@@ -15,16 +15,19 @@
 /*  limitations under the License.                                          */
 /*--------------------------------------------------------------------------*/
 #include <iostream>
-#include <chrono>
+#include <omp.h>
 
 // simulation of a calculation for an explicit FDM method using a pipeline
 // the FTCS method for the heat equation 
 
-const int N = 10;
-const int T = 10;
+const int SCALE = 1000;
 
-double Mp[N][N];
-double Ms[N][N];
+const int W = SCALE;
+const int H = SCALE;
+const int T = SCALE;
+
+double Fp[H][W];
+double Fs[H][W];
 
 using namespace std;
 /*$TET$*/
@@ -33,19 +36,22 @@ struct pipeline{
 	pipeline(int num_stage, int num_iter)
 	{
 /*$TET$pipe$pipe*/
-
+		srand(0);
+		for (int i = 0; i<H; i++)
+		for (int j = 0; j<W; j++) Fs[i][j] = rand();
+		srand(0);
+		for (int i = 0; i<H; i++)
+		for (int j = 0; j<W; j++) Fp[i][j] = rand();
 /*$TET$*/
 	}
 
 	void run();
-	void delay(double);
-	double speedup();
-	double speedup(int);
-	int numthreads();
+	int  numthreads();
 
 	void stage(int num){
 /*$TET$pipe$stage*/
-
+		for (int j = 1; j<W - 1; j++)
+			Fp[num][j] = (Fp[num][j - 1] + Fp[num][j + 1] + Fp[num - 1][j] + Fp[num + 1][j])*0.25;
 /*$TET$*/
 	}
 /*$TET$pipe$data*/
@@ -58,43 +64,46 @@ int main(int argc, char* argv[])
 {
 	double Tp, Ts;
 
-	pipeline p(N,T);
+	pipeline p(H-2,T);
 
-	std::cout << "the task dimentions: N (number of stages) = " << N
-		<< " T (number of data items passed thru) = " << T << endl;
+	std::cout << "task dimentions:" << endl
+		<< "N (number of stages) = " << H - 2 << endl
+		<< "T (number of data items passed thru the pipe) = " << T << endl;
 
-	auto start = std::chrono::high_resolution_clock::now();
+	double start = omp_get_wtime();
 	p.run();
-	auto end = std::chrono::high_resolution_clock::now();
+	double end = omp_get_wtime(); 
 
-	if (p.speedup() <= 0.0){
-		Tp = ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000000);
-		std::cout << "the parallel computation time is " << Tp << " seconds" << endl;
+	Tp = end - start;
+	std::cout << "parallel computation time is " << Tp << " seconds" << endl;
 
-		start = std::chrono::high_resolution_clock::now();
-		// sequential code
-		end = std::chrono::high_resolution_clock::now();
+	start = omp_get_wtime();
+	
+	for (int t = 1; t <= T; t++)
+	for (int i = 1; i < H - 1; i++)
+	for (int j = 1; j < W - 1; j++)
+		Fs[i][j] = (Fs[i][j - 1] + Fs[i][j + 1] + Fs[i - 1][j] + Fs[i + 1][j])*0.25;
 
-		Ts = ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000000);
-		std::cout << "the sequential computation time is " << Ts << " seconds" << endl;
-	}
+	end = omp_get_wtime();
 
-	for (int i = 0; i < N; i++){
-		for (int j = 0; j < N; j++){
-			if (Mp[i][j] != Ms[i][j]){
+	Ts = end - start;
+	std::cout << "sequential computation time is " << Ts << " seconds" << endl;
+		
+	for (int i = 0; i < H; i++){
+		for (int j = 0; j < W; j++){
+			if (Fp[i][j] != Fs[i][j]){
 				printf("Something went wrong!!!\n");
 				return EXIT_FAILURE;
 			}
 		}
 	}
 
-
-	if (p.speedup()>0.0){
-		std::cout << "the maximum theoretical speedup is " << p.speedup() << endl;
-		std::cout << "the theoretical speedup for " << p.numthreads() << " is " << p.speedup(p.numthreads()) << endl;
-	}
-	else
-		std::cout << "the experimental speedup is " << Ts / Tp << "for " << p.numthreads() << "threads" << endl;
+	double alfa = ((double)(2 * T - 1) + (H - 3)) / (T * (H - 2));
+	double n = p.numthreads();
+	
+	std::cout << "maximum theoretical speedup is " << 1 / alfa << endl;
+	std::cout << "theoretical speedup for " << n << " threads is " << (1/(alfa + (1-alfa)/n)) << endl;
+	std::cout << "experimental speedup is " << Ts / Tp << " for " << n << " threads" << endl;
 
 	return EXIT_SUCCESS;
 }

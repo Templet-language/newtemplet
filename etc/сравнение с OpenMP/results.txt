@@ -1,0 +1,273 @@
+Intel(R) Core(TM) i3-3220T CPU @ 2.80GHz 2.80GHz
+RAM 4,00 Gb 
+Windows 8.1 x64
+-----------------------------------------------------------------------
+Test results for H = 1000; W = 1000; T = 2000; OMP max threads  = 4
+
+seq_min = 14.2603 sec;
+seq_max = 14.2941 sec;
+diff_seq = 0.0338309 sec
+
+omp_min = 5.45036 sec;
+omp_max = 6.00984 sec;
+diff_omp = 0.559482 sec
+
+tet_min = 4.80558 sec;
+tet_max = 4.97551 sec;
+diff_tet = 0.169936 sec
+
+OMP min based speedup = 2.37282
+OMP max based speedup = 2.6226
+
+TET min based speedup = 2.86609
+TET max based speedup = 2.97448
+
+theoretical speedup for the problem = 399.52
+number of efficient threads (NET)  = 3.93218
+Amdahl's speedup estimation based on NET = 3.90353
+Amdahl's speedup estimation based on OMP max threads = 3.97019
+
+presicion = 3.66544e-007 sec
+----------------------------------------------------------------------------
+Test results for H = 900; W = 900; T = 1800; OMP max threads  = 4
+
+seq_min = 10.3743 sec;
+seq_max = 10.3909 sec;
+diff_seq = 0.016662 sec
+
+omp_min = 3.9056 sec;
+omp_max = 3.96289 sec;
+diff_omp = 0.0572889 sec
+
+tet_min = 3.54225 sec;
+tet_max = 3.58877 sec;
+diff_tet = 0.0465221 sec
+
+OMP min based speedup = 2.61786
+OMP max based speedup = 2.66052
+
+TET min based speedup = 2.89076
+TET max based speedup = 2.93343
+
+theoretical speedup for the problem = 359.52
+number of efficient threads (NET)  = 3.79215
+Amdahl's speedup estimation based on NET = 3.76293
+Amdahl's speedup estimation based on OMP max threads = 3.9669
+
+presicion = 3.66544e-007 sec
+----------------------------------------------------------------------------
+Test results for H = 800; W = 800; T = 1600; OMP max threads  = 4
+
+seq_min = 7.2777 sec;
+seq_max = 7.28937 sec;
+diff_seq = 0.0116671 sec
+
+omp_min = 2.58441 sec;
+omp_max = 2.62142 sec;
+diff_omp = 0.037018 sec
+
+tet_min = 2.41956 sec;
+tet_max = 2.45081 sec;
+diff_tet = 0.0312412 sec
+
+OMP min based speedup = 2.77624
+OMP max based speedup = 2.82052
+
+TET min based speedup = 2.96951
+TET max based speedup = 3.01268
+
+theoretical speedup for the problem = 319.52
+number of efficient threads (NET)  = 3.96922
+Amdahl's speedup estimation based on NET = 3.93267
+Amdahl's speedup estimation based on OMP max threads = 3.96279
+
+presicion = 3.66544e-007 sec
+-------------------------------------------------------------------------------
+Test results for H = 700; W = 700; T = 1400; OMP max threads  = 4
+
+seq_min = 4.86364 sec;
+seq_max = 4.8796 sec;
+diff_seq = 0.0159666 sec
+
+omp_min = 1.69248 sec;
+omp_max = 1.73954 sec;
+diff_omp = 0.0470624 sec
+
+tet_min = 1.6183 sec;
+tet_max = 1.66677 sec;
+diff_tet = 0.048468 sec
+
+OMP min based speedup = 2.79594
+OMP max based speedup = 2.88312
+
+TET min based speedup = 2.918
+TET max based speedup = 3.01526
+
+theoretical speedup for the problem = 279.519
+number of efficient threads (NET)  = 3.81951
+Amdahl's speedup estimation based on NET = 3.78137
+Amdahl's speedup estimation based on OMP max threads = 3.95753
+
+presicion = 3.66544e-007 sec
+---------------------------------------------------------------------------------
+Test results for H = 600; W = 600; T = 1200; OMP max threads  = 4
+
+seq_min = 3.05239 sec;
+seq_max = 3.0695 sec;
+diff_seq = 0.0171168 sec
+
+omp_min = 1.01193 sec;
+omp_max = 1.05457 sec;
+diff_omp = 0.0426393 sec
+
+tet_min = 1.03729 sec;
+tet_max = 1.12349 sec;
+diff_tet = 0.0862011 sec
+
+OMP min based speedup = 2.89443
+OMP max based speedup = 3.03331
+
+TET min based speedup = 2.71688
+TET max based speedup = 2.95916
+
+theoretical speedup for the problem = 239.519
+number of efficient threads (NET)  = 3.91502
+Amdahl's speedup estimation based on NET = 3.86795
+Amdahl's speedup estimation based on OMP max threads = 3.95052
+
+presicion = 3.66544e-007 sec
+------------------------------------------------------------------------------------
+Test results for H = 500; W = 500; T = 1000; OMP max threads  = 4
+
+seq_min = 1.75605 sec;
+seq_max = 1.76229 sec;
+diff_seq = 0.0062437 sec
+
+omp_min = 0.565143 sec;
+omp_max = 0.604066 sec;
+diff_omp = 0.0389233 sec
+
+tet_min = 0.608527 sec;
+tet_max = 0.945684 sec;
+diff_tet = 0.337157 sec
+
+OMP min based speedup = 2.90704
+OMP max based speedup = 3.11831
+
+TET min based speedup = 1.85691
+TET max based speedup = 2.89599
+
+theoretical speedup for the problem = 199.519
+number of efficient threads (NET)  = 3.92677
+Amdahl's speedup estimation based on NET = 3.87
+Amdahl's speedup estimation based on OMP max threads = 3.94075
+
+presicion = 3.66544e-007 sec
+----------------------------------------------------------------------------------------
+Test results for H = 400; W = 400; T = 800; OMP max threads  = 4
+
+seq_min = 0.893554 sec;
+seq_max = 0.903228 sec;
+diff_seq = 0.00967492 sec
+
+omp_min = 0.280691 sec;
+omp_max = 0.321423 sec;
+diff_omp = 0.0407321 sec
+
+tet_min = 0.325627 sec;
+tet_max = 0.342286 sec;
+diff_tet = 0.016659 sec
+
+OMP min based speedup = 2.77999
+OMP max based speedup = 3.21788
+
+TET min based speedup = 2.61054
+TET max based speedup = 2.77381
+
+theoretical speedup for the problem = 159.519
+number of efficient threads (NET)  = 3.99476
+Amdahl's speedup estimation based on NET = 3.92114
+Amdahl's speedup estimation based on OMP max threads = 3.92616
+
+presicion = 3.66544e-007 sec
+------------------------------------------------------------------------------------------
+Test results for H = 300; W = 300; T = 600; OMP max threads  = 4
+
+seq_min = 0.37264 sec;
+seq_max = 0.375467 sec;
+diff_seq = 0.00282752 sec
+
+omp_min = 0.117945 sec;
+omp_max = 0.145934 sec;
+diff_omp = 0.0279885 sec
+
+tet_min = 0.151509 sec;
+tet_max = 0.165597 sec;
+diff_tet = 0.0140881 sec
+
+OMP min based speedup = 2.55348
+OMP max based speedup = 3.1834
+
+TET min based speedup = 2.25028
+TET max based speedup = 2.47818
+
+theoretical speedup for the problem = 119.519
+number of efficient threads (NET)  = 4.05296
+Amdahl's speedup estimation based on NET = 3.95201
+Amdahl's speedup estimation based on OMP max threads = 3.90206
+
+presicion = 3.66544e-007 sec
+----------------------------------------------------------------------------------------
+Test results for H = 200; W = 200; T = 400; OMP max threads  = 4
+
+seq_min = 0.108238 sec;
+seq_max = 0.129267 sec;
+diff_seq = 0.021029 sec
+
+omp_min = 0.0340973 sec;
+omp_max = 0.0458828 sec;
+diff_omp = 0.0117855 sec
+
+tet_min = 0.0830507 sec;
+tet_max = 0.104325 sec;
+diff_tet = 0.0212738 sec
+
+OMP min based speedup = 2.35902
+OMP max based speedup = 3.79113
+
+TET min based speedup = 1.03752
+TET max based speedup = 1.55649
+
+theoretical speedup for the problem = 79.5181
+number of efficient threads (NET)  = 1.9692
+Amdahl's speedup estimation based on NET = 1.94549
+Amdahl's speedup estimation based on OMP max threads = 3.85458
+
+presicion = 3.66544e-007 sec
+------------------------------------------------------------------------------------------
+Test results for H = 100; W = 100; T = 200; OMP max threads  = 4
+
+seq_min = 0.0127341 sec;
+seq_max = 0.013542 sec;
+diff_seq = 0.000807862 sec
+
+omp_min = 0.00430909 sec;
+omp_max = 0.00873583 sec;
+diff_omp = 0.00442675 sec
+
+tet_min = 0.023336 sec;
+tet_max = 0.160427 sec;
+diff_tet = 0.137091 sec
+
+OMP min based speedup = 1.45768
+OMP max based speedup = 3.14265
+
+TET min based speedup = 0.0793761
+TET max based speedup = 0.580303
+
+theoretical speedup for the problem = 39.5161
+number of efficient threads (NET)  = 1.94636
+Amdahl's speedup estimation based on NET = 1.90084
+Amdahl's speedup estimation based on OMP max threads = 3.71775
+
+presicion = 3.66544e-007 sec
