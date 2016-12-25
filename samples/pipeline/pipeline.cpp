@@ -50,12 +50,11 @@ struct pipeline{
 
 	void stage(int num){
 /*$TET$pipe$stage*/
-		for (int j = 1; j<W - 1; j++)
+		for (int j = 1; j < W - 1; j++)
 			Fp[num][j] = (Fp[num][j - 1] + Fp[num][j + 1] + Fp[num - 1][j] + Fp[num + 1][j])*0.25;
 /*$TET$*/
 	}
 /*$TET$pipe$data*/
-
 /*$TET$*/
 };
 
@@ -80,10 +79,10 @@ int main(int argc, char* argv[])
 	start = omp_get_wtime();
 	
 	for (int t = 1; t <= T; t++)
-	for (int i = 1; i < H - 1; i++)
-	for (int j = 1; j < W - 1; j++)
-		Fs[i][j] = (Fs[i][j - 1] + Fs[i][j + 1] + Fs[i - 1][j] + Fs[i + 1][j])*0.25;
-
+		for (int i = 1; i < H - 1; i++)
+			for (int j = 1; j < W - 1; j++)
+				Fs[i][j] = (Fs[i][j - 1] + Fs[i][j + 1] + Fs[i - 1][j] + Fs[i + 1][j])*0.25;
+				
 	end = omp_get_wtime();
 
 	Ts = end - start;

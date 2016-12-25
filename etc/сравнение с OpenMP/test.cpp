@@ -8,7 +8,7 @@
 
 using namespace std;
 
-const int SCALE = 500;
+const int SCALE = 800;
 
 const int W = SCALE;
 const int H = SCALE;
@@ -193,12 +193,14 @@ void tfunc(engine*e)
 	}
 }
 
-void run(engine*e, int n = 1)
+double run(engine*e, int n = 1)
 {
 	std::vector<std::thread> threads(n);
 	e->active = n;
 	for (int i = 0; i<n; i++) threads[i] = std::thread(tfunc, e);
+	double start = omp_get_wtime();
 	for (auto& th : threads) th.join();
+	return omp_get_wtime() - start;
 }
 
 const int N = H - 2;
@@ -235,10 +237,7 @@ double par_tet()
 	}
 	send(&e, &cs[0], &ps[0]);
 
-	double time = omp_get_wtime();
-	run(&e, omp_get_max_threads());
-
-	return omp_get_wtime() - time;
+	return run(&e, omp_get_max_threads());
 }
 
 void main()
