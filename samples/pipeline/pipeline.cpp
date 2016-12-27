@@ -22,9 +22,9 @@
 
 const int SCALE = 1000;
 
-const int W = SCALE;
+const int W = SCALE*2;
 const int H = SCALE;
-const int T = SCALE;
+const int T = SCALE*2;
 
 double Fp[H][W];
 double Fs[H][W];

@@ -8,11 +8,11 @@
 
 using namespace std;
 
-const int SCALE = 800;
+const int SCALE = 1500;
 
-const int W = SCALE;
+const int W = SCALE*2;
 const int H = SCALE;
-const int T = SCALE;
+const int T = SCALE*2;
 
 double field[H][W];
 double field1[H][W];
@@ -20,15 +20,13 @@ double field1[H][W];
 const int OBS_N = 19;
 
 double obs_seq[OBS_N];
-double seq_max, seq_min;
+double seq_max, seq_mid, seq_min;
 
 double obs_omp[OBS_N];
-double omp_max, omp_min;
+double omp_max, omp_mid, omp_min;
 
 double obs_tet[OBS_N];
-double tet_max, tet_min;
-
-double NET;
+double tet_max, tet_mid, tet_min;
 
 void shufle()
 {
@@ -77,12 +75,12 @@ double par_omp()
 	for (int t = 1; t <= (2 * T - 1) + (H - 3); t++){
 
 		if (t % 2 == 1){
-#pragma omp for schedule(dynamic)
+#pragma omp for schedule(dynamic,1)
 			for (int i = 1; i<H - 1; i += 2)
 				if (i <= t && i>t - 2 * T)	op(i);
 		}
 		if (t % 2 == 0){
-#pragma omp for schedule(dynamic)
+#pragma omp for schedule(dynamic,1)
 			for (int i = 2; i<H - 1; i += 2)
 				if (i <= t && i>t - 2 * T)	op(i);
 		}
@@ -114,25 +112,9 @@ void min_max()
 		tet_max = obs_tet[i] > tet_max ? obs_tet[i] : tet_max;
 		tet_min = obs_tet[i] < tet_min ? obs_tet[i] : tet_min;
 	}
-}
-
-void calc_NET()
-{
-	int max_t = omp_get_max_threads();
-	
-	double par_time = omp_get_wtime();
-#pragma omp parallel
-	{
-		for (int t = 1; t <= T; t++) op(1 + omp_get_thread_num() * 2);
-	}
-	par_time = omp_get_wtime() - par_time;
-	
-	double seq_time = omp_get_wtime();
-	for (int t = 0; t < max_t; t++)
-		for (int t = 1; t <= T; t++) op(1 + omp_get_thread_num() * 2);
-	seq_time = omp_get_wtime() - seq_time;
-
-	NET = seq_time / par_time;
+	seq_mid = (seq_min + seq_max) / 2;
+	omp_mid = (omp_min + omp_max) / 2;
+	tet_mid = (tet_min + tet_max) / 2;
 }
 
 struct chan;
@@ -246,34 +228,15 @@ void main()
 		shufle_seq();	obs_seq[i] = seq_alg();
 		shufle();	obs_omp[i] = par_omp(); cout << (compare() ? "OMP Ok " : "something wrong in OMP ");
 		shufle();	obs_tet[i] = par_tet(); cout << (compare() ? "Templet Ok " : "something wrong in Templet ");
-	
 		cout << (int)((float)(i+1)/OBS_N*100) << "% done" << endl;
 	}
 	
-	min_max();	calc_NET();
+	min_max();	
 
 	cout << "\nTest results for H = " << H << "; W = " << W << "; T = " << T << "; OMP max threads  = " << omp_get_max_threads() << "\n";
 	
-	cout << "\nseq_min  = " << seq_min << " sec; " << "\nseq_max  = " << seq_max <<" sec; \ndiff_seq = " << seq_max-seq_min << " sec\n"; 
-	cout << "\nomp_min  = " << omp_min << " sec; " << "\nomp_max  = " << omp_max << " sec; \ndiff_omp = " << omp_max - omp_min << " sec\n";
-	cout << "\ntet_min  = " << tet_min << " sec; " << "\ntet_max  = " << tet_max << " sec; \ndiff_tet = " << tet_max - tet_min << " sec\n";
-
-	cout << "\nOMP min based speedup = " << seq_min / omp_max << "\n";
-	cout << "OMP max based speedup = " << seq_max / omp_min << "\n";
-
-	cout << "\nTET min based speedup = " << seq_min / tet_max << "\n";
-	cout << "TET max based speedup = " << seq_max / tet_min << "\n";
-
-	double alfa = ((double)(2 * T - 1) + (H - 3)) / (T * (H - 2));
-	double est_speedup_NET = 1 / ((1-alfa)/NET+alfa);
-	double est_speedup_OMP = 1 / ((1 - alfa) / omp_get_max_threads() + alfa);
-
-	cout << "\ntheoretical speedup for the problem = " << 1 / alfa << "\n";
-	cout << "number of efficient threads (NET)  = "<< NET << "\n";
-	cout << "Amdahl's speedup estimation based on NET = " << est_speedup_NET << "\n";
-	cout << "Amdahl's speedup estimation based on OMP max threads = " << est_speedup_OMP << "\n";
-	
-	cout << "\npresicion = " << omp_get_wtick() << " sec";
-
+	cout << "\nseq_min  = " << seq_min << " sec; " << "\nseq_mid  = " << seq_mid <<" sec; \nseq_max  = " << seq_max << " sec\n"; 
+	cout << "\nomp_min  = " << omp_min << " sec; " << "\nomp_mid  = " << omp_mid << " sec; \nomp_max  = " << omp_max << " sec\n";
+	cout << "\ntet_min  = " << tet_min << " sec; " << "\ntet_mid  = " << tet_mid << " sec; \ntet_max  = " << tet_max << " sec\n";
 }
 
