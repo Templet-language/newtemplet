@@ -19,33 +19,34 @@
 
 // The TEMPLET domain-specific language: definition in C++
 
-namespace dsl{
+namespace def{
 
 class message{
 public:
 	enum message_type{CALL,REPLY};
 public:
-	message(std::string name);
+	message(std::string& name);
 	message();
 	~message();
 public:
-	message& name(std::string name);
+	message& name(std::string& name);
 	message& duplex();
-	message& serilizable();
-	message& content(std::string name, message_type);
-	message& tag(std::string name, message_type);
+	message& serializable();
+	message& topic(std::string& name, message_type);
+	message& tag(std::string& name, message_type);
 };
 
 class actor{
 public:
 	enum port_type{CLIENT,SERVER};
 public:
-	actor(string n);
+	actor(std::string name);
 	actor();
 	~actor();
 public:
-	actor& port(std::string port_name, port_type, std::string message_name);
-	actor& serilizable();
+	actor& name(std::string& name)
+	actor& port(std::string& port_name, port_type, std::string& message_name);
+	actor& serializable();
 	actor& startable();
 	actor& has_raw_ports();
 };
