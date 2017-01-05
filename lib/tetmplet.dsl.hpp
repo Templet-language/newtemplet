@@ -21,9 +21,7 @@
 
 namespace def{
 
-class message{
-public:
-	enum message_type{CALL,REPLY};
+class message{        
 public:
 	message(std::string& name);
 	message();
@@ -32,23 +30,21 @@ public:
 	message& name(std::string& name);
 	message& duplex();
 	message& serializable();
-	message& topic(std::string& name, message_type);
-	message& tag(std::string& name, message_type);
+	message& in(std::string& name, bool);
+	message& out(std::string& name, bool);
 };
 
-class actor{
-public:
-	enum port_type{CLIENT,SERVER};
+class actor{        
 public:
 	actor(std::string name);
 	actor();
 	~actor();
 public:
 	actor& name(std::string& name)
-	actor& port(std::string& port_name, port_type, std::string& message_name);
-	actor& serializable();
+	actor& in(std::string& port_name,std::string& message_name);
+			& serializable();
 	actor& startable();
-	actor& has_raw_ports();
+	actor& any();
 };
 
 }
