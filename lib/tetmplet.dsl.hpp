@@ -30,8 +30,8 @@ public:
 	message& name(std::string& name);
 	message& duplex();
 	message& serializable();
-	message& in(std::string& name, bool);
-	message& out(std::string& name, bool);
+	message& in(std::string& name, bool content=true);
+	message& out(std::string& name, bool content=true);
 };
 
 class actor{        
@@ -41,9 +41,10 @@ public:
 	~actor();
 public:
 	actor& name(std::string& name)
-	actor& in(std::string& port_name,std::string& message_name);
-			& serializable();
+	actor& serializable();
 	actor& startable();
+	actor& in(std::string& port_name,std::string& message_name);
+	actor& out(std::string& port_name,std::string& message_name);
 	actor& any();
 };
 
