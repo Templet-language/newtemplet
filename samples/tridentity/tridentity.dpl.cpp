@@ -12,27 +12,25 @@ struct my_engine : engine{
 	void map(){ ::map(this); }
 };
 
-enum MES_TAGS{ , START };
+enum MES_TAGS{ START };
 
 #pragma templet ~value_message$=
-struct value_message : messsage{
+
+struct value_message : message{
 	value_message(actor*a, engine*e, int t) : _where(CLI), _cli(a), _client_id(t){
-		::init(this, e, save_adapter, restore_adapter);
+		::init(this, e, value_message_save_adapter, value_message_restore_adapter);
 	}
 
-	friend void save_adapter(message*m, saver*s){
+	friend void value_message_save_adapter(message*m, saver*s){
 		((value_message*)m)->save(s);
 	}
 
-	friend void restore_adapter(message*m, restorer*r){
+	friend void value_message_restore_adapter(message*m, restorer*r){
 		((value_message*)m)->restore(r);
 	}
 
-	bool access(){
-		bool ret;
-		if (_where == CLI) ret = ::access(this, _cli);
-		else if (_where == SRV) ret = ::access(this, _srv);
-		return ret;
+	bool access(actor*a){
+		return ::access(this, a);
 	}
 
 	void send(){
@@ -63,22 +61,23 @@ struct value_message : messsage{
 };
 
 #pragma templet *master$(sin2_port!value_message,cos2_port!value_message)+
+
 struct master : actor{
-	enum tag{TAG_sin2_port,TAG_cos2_port};
+	enum tag{TAG_sin2_port=MES_TAGS::START+1,TAG_cos2_port=MES_TAGS::START+2};
 
 	master(my_engine&e):_sin2_port(this, &e, TAG_sin2_port),_cos2_port(this, &e, TAG_cos2_port){
-		::init(this, &e, recv_adapter, save_adapter, restore_adapter);
+		::init(this, &e, master_recv_adapter, master_save_adapter, master_restore_adapter);
 		::init(&_start, &e);
 		::send(&_start, this, MES_TAGS::START);
 /*$TET$master$master*/
 /*$TET$*/
 	}
 
-	friend void save_adapter(actor*a, saver*s){
+	friend void master_save_adapter(actor*a, saver*s){
 		((master*)a)->save(s);
 	}
 
-	friend void restore_adapter(actor*a, restorer*r){
+	friend void master_restore_adapter(actor*a, restorer*r){
 		((master*)a)->restore(r);
 	}
 
@@ -89,7 +88,7 @@ struct master : actor{
 	value_message* sin2_port(){return &_sin2_port;}
 	value_message* cos2_port(){return &_cos2_port;}
 
-	friend void recv_adapter (actor*a, message*m, int tag){
+	friend void master_recv_adapter (actor*a, message*m, int tag){
 		switch(tag){
 			case TAG_sin2_port: ((master*)a)->sin2_port(*((value_message*)m)); break;
 			case TAG_cos2_port: ((master*)a)->cos2_port(*((value_message*)m)); break;
@@ -133,11 +132,12 @@ struct master : actor{
 };
 
 #pragma templet *worker(master_port?value_message)
+
 struct worker : actor{
 	enum tag{TAG_master_port};
 
 	worker(my_engine&e){
-		::init(this, &e, recv_adapter);
+		::init(this, &e, worker_recv_adapter);
 /*$TET$worker$worker*/
 /*$TET$*/
 	}
@@ -148,7 +148,7 @@ struct worker : actor{
 
 	void master_port(value_message*m){m->_server_id=TAG_master_port; m->_srv=this;}
 
-	friend void recv_adapter (actor*a, message*m, int tag){
+	friend void worker_recv_adapter (actor*a, message*m, int tag){
 		switch(tag){
 			case TAG_master_port: ((worker*)a)->master_port(*((value_message*)m)); break;
 		}

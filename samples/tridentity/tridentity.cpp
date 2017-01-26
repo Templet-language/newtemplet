@@ -28,8 +28,9 @@ public:
 };
 
 #pragma templet ~value_message$=
-struct value_message{
-	bool access();
+
+struct value_message : message{
+	bool access(actor*);
 	void send();
 
 	void save(saver*s){
@@ -51,7 +52,8 @@ struct value_message{
 };
 
 #pragma templet *master$(sin2_port!value_message,cos2_port!value_message)+
-struct master{
+
+struct master : actor{
 	master(my_engine&){
 /*$TET$master$master*/
 /*$TET$*/
@@ -75,7 +77,7 @@ struct master{
 
 	void sin2_port(value_message&m){
 /*$TET$master$sin2_port*/
-		if (_cos2_port.access()){
+		if (_cos2_port.access(this)){
 			x = _cos2_port.x + _sin2_port.x; delay(1.0);
 			stop();
 		}
@@ -84,7 +86,7 @@ struct master{
 
 	void cos2_port(value_message&m){
 /*$TET$master$cos2_port*/
-		if (_sin2_port.access()){
+		if (_sin2_port.access(this)){
 			x = _cos2_port.x + _sin2_port.x; delay(1.0);
 			stop();
 		}
@@ -112,7 +114,8 @@ struct master{
 };
 
 #pragma templet *worker(master_port?value_message)
-struct worker{
+
+struct worker : actor{
 	worker(my_engine&){
 /*$TET$worker$worker*/
 /*$TET$*/
@@ -145,7 +148,7 @@ struct worker{
 /*$TET$footer*/
 int main(int argc, char *argv[])
 {
-	my_engine _my_engine(argc,argv);
+	my_engine _my_engine(argc, argv);
 
 	master _master(_my_engine);
 	worker _sin2_worker(_my_engine);

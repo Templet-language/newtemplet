@@ -12,8 +12,9 @@ public:
 };
 
 #pragma templet ~value_message$=
-struct value_message{
-	bool access();
+
+struct value_message : message{
+	bool access(actor*);
 	void send();
 
 	void save(saver*s){
@@ -33,7 +34,8 @@ struct value_message{
 };
 
 #pragma templet *master$(sin2_port!value_message,cos2_port!value_message)+
-struct master{
+
+struct master : actor{
 	master(my_engine&){
 /*$TET$master$master*/
 /*$TET$*/
@@ -81,7 +83,8 @@ struct master{
 };
 
 #pragma templet *worker(master_port?value_message)
-struct worker{
+
+struct worker : actor{
 	worker(my_engine&){
 /*$TET$worker$worker*/
 /*$TET$*/

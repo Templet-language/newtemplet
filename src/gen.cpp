@@ -290,8 +290,8 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 	outf << endl;
 
 	for (message& m : mlist){
-		outf << "#pragma templet "; print_message(outf, m); outf << endl;
-		outf << "struct " << m.name << "{\n";
+		outf << "#pragma templet "; print_message(outf, m); outf << endl << endl;
+		outf << "struct " << m.name << " : message{\n";
 
 		if (!m.subm.empty()){
 			bool first = true;
@@ -313,12 +313,12 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 				}
 			}
 			
-			outf << "\tbool access(tag);\n";
+			outf << "\tbool access(actor*,tag);\n";
 			outf << "\tvoid send(tag);\n";
 		}
 		else{
 			if (m.duplex){
-				outf << "\tbool access();\n";
+				outf << "\tbool access(actor*);\n";
 				outf << "\tvoid send();\n";
 			}
 			else{
@@ -351,8 +351,8 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 	}
 
 	for (actor& a : alist){
-		outf << "#pragma templet "; print_actor(outf, a); outf << endl;
-		outf << "struct " << a.name << "{\n";
+		outf << "#pragma templet "; print_actor(outf, a); outf << endl << endl;
+		outf << "struct " << a.name << " : actor{\n";
 
 		outf << "\t" << a.name << "(my_engine&){\n"
 			"/*$TET$" << a.name << "$" << a.name << "*/\n"
@@ -452,29 +452,33 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 	outf << endl;
 	
 	outf << "enum MES_TAGS{ ";
+	
 	bool first = true;
+	int  mes_tags = false;
+	
 	for (auto& m:mlist){
 		if(!m.duplex){
 			if (first) first = false; else outf << ", ";
 			outf << "MES_" << m.name;
+			mes_tags=true;
 		}
 	}
 	
-	if (mlist.empty()) outf << "START";
+	if (!mes_tags) outf << "START";
 	else outf << ", START";
-	
+
 	outf << " };\n";
 
 	outf << endl;
 
 	for (message& m : mlist){
-		outf << "#pragma templet "; print_message(outf, m); outf << endl;
-		outf << "struct " << m.name << " : messsage{\n";
+		outf << "#pragma templet "; print_message(outf, m); outf << endl << endl;
+		outf << "struct " << m.name << " : message{\n";
 
 		if (m.duplex)	outf << "\t" << m.name << "(actor*a, engine*e, int t) : _where(CLI), _cli(a), _client_id(t){\n";
 		else outf << "\t" << m.name << "(actor*a, engine*e){\n";
 
-		if (m.serilizable)	outf <<	"\t\t::init(this, e, save_adapter, restore_adapter);\n";
+		if (m.serilizable)	outf <<	"\t\t::init(this, e, "<<m.name<<"_save_adapter, "<<m.name<<"_restore_adapter);\n";
 		else outf << "\t\t::init(this, e);\n";
 		
 		outf << "\t}\n";
@@ -482,10 +486,10 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		if (m.serilizable){
 			outf << endl;
 
-			outf << "\tfriend void save_adapter(message*m, saver*s){\n"
+			outf << "\tfriend void "<<m.name<<"_save_adapter(message*m, saver*s){\n"
 				"\t\t((value_message*)m)->save(s);\n"
 				"\t}\n\n"
-				"\tfriend void restore_adapter(message*m, restorer*r){\n"
+				"\tfriend void "<<m.name<<"_restore_adapter(message*m, restorer*r){\n"
 				"\t\t((value_message*)m)->restore(r);\n"
 				"\t}\n";
 		}
@@ -519,11 +523,8 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			if (!printed) outf << endl;
 
 			outf <<
-				"\tbool access(tag t){\n"
-				"\t\tbool ret;\n"
-				"\t\tif (_where == CLI) ret = ::access(this, _cli);\n"
-				"\t\telse if (_where == SRV) ret = ::access(this, _srv);\n"
-				"\t\treturn ret && t==_tag;\n"
+				"\tbool access(actor*a,tag t){\n"
+				"\t\treturn ::access(this, a) && t==_tag;\n"
 				"\t}\n\n"
 
 				"\tvoid send(tag t){\n"
@@ -538,11 +539,8 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			if (m.duplex){
 			
 				outf <<
-				"\tbool access(){\n"
-					"\t\tbool ret;\n"
-					"\t\tif (_where == CLI) ret = ::access(this, _cli);\n"
-					"\t\telse if (_where == SRV) ret = ::access(this, _srv);\n"
-					"\t\treturn ret;\n"
+				"\tbool access(actor*a){\n"
+					"\t\treturn ::access(this, a);\n"
 					"\t}\n\n"
 
 					"\tvoid send(){\n"
@@ -598,7 +596,7 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 	}
 
 	for (actor& a : alist){
-		outf << "#pragma templet "; print_actor(outf, a); outf << endl;
+		outf << "#pragma templet "; print_actor(outf, a); outf << endl << endl;
 		outf << "struct " << a.name << " : actor{\n";
 
 		if (!a.ports.empty()){
@@ -607,7 +605,7 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 
 			outf << "\tenum tag{";
 			for (auto& x : a.ports){
-				if (a.response_any){
+				if (a.response_any || a.initially_active){
 					if (first){ outf << "TAG_" << x.name << "=MES_TAGS::START+" << ++tag_num; first = false; }
 					else outf << ",TAG_" << x.name << "=MES_TAGS::START+" << ++tag_num;
 				}
@@ -636,8 +634,8 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			outf << "{\n";
 		}
 
-		if(a.serilizable) outf << "\t\t::init(this, &e, recv_adapter, save_adapter, restore_adapter);\n";
-		else outf << "\t\t::init(this, &e, recv_adapter);\n";
+		if(a.serilizable) outf << "\t\t::init(this, &e, "<<a.name<<"_recv_adapter, "<<a.name<<"_save_adapter, "<<a.name<<"_restore_adapter);\n";
+		else outf << "\t\t::init(this, &e, "<<a.name<<"_recv_adapter);\n";
 
 		if (a.initially_active){
 			outf << "\t\t::init(&_start, &e);\n"
@@ -651,11 +649,11 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 
 		if (a.serilizable){
 			outf <<
-				"\tfriend void save_adapter(actor*a, saver*s){\n"
+				"\tfriend void "<<a.name<<"_save_adapter(actor*a, saver*s){\n"
 				"\t\t((" << a.name << "*)a)->save(s);\n"
 				"\t}\n\n"
 
-				"\tfriend void restore_adapter(actor*a, restorer*r){\n"
+				"\tfriend void "<<a.name<<"_restore_adapter(actor*a, restorer*r){\n"
 				"\t\t((" << a.name << "*)a)->restore(r);\n"
 				"\t}\n\n";
 		}
@@ -676,11 +674,11 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 
 		outf << endl;
 
-		outf <<	"\tfriend void recv_adapter (actor*a, message*m, int tag){\n";
+		outf <<	"\tfriend void "<<a.name<<"_recv_adapter (actor*a, message*m, int tag){\n";
 		outf << "\t\tswitch(tag){\n";
 		
 		for (auto& m : mlist)
-			if (!m.duplex)	outf << "\t\t\tcase MES_TAGS::MES_" << m.name << ": ((" << a.name << "*)a)->recv_" << m.name << "(*((" << m.name << "*)m)); break;\n";
+			if (!m.duplex && a.response_any)	outf << "\t\t\tcase MES_TAGS::MES_" << m.name << ": ((" << a.name << "*)a)->recv_" << m.name << "(*((" << m.name << "*)m)); break;\n";
 	
 		for (auto& p : a.ports)
 			outf << "\t\t\tcase TAG_" << p.name << ": ((" << a.name << "*)a)->" << p.name << "(*((" << p.message_name << "*)m)); break;\n";
