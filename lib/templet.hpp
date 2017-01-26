@@ -16,7 +16,7 @@
 
 #pragma once
 
-namespace TEMPLET{
+namespace TEMPLET{ // runtime library interface
 
 	struct actor;
 	struct message;
@@ -42,6 +42,38 @@ namespace TEMPLET{
 
 	inline void save(saver*, void*, size_t);
 	inline void restore(restorer*, void*, size_t);
+
+	
+namespace def{ // domain-specific language interface
+
+		class message{
+		public:
+			message(std::string& name);
+			message();
+			~message();
+		public:
+			message& name(std::string& name);
+			message& duplex();
+			message& serializable();
+			message& in(std::string& name, bool content = true);
+			message& out(std::string& name, bool content = true);
+		};
+
+		class actor{
+		public:
+			actor(std::string name);
+			actor();
+			~actor();
+		public:
+			actor& name(std::string& name);
+			actor& serializable();
+			actor& startable();
+			actor& in(std::string& port_name, std::string& message_name);
+			actor& out(std::string& port_name, std::string& message_name);
+			actor& any();
+		};
+
+}
 }
 
 #if defined(TET_DEBUG_EXEC) || (!defined(TET_SERIAL_EXEC) && !defined(TET_PARALLEL_EXEC) && !defined(TET_EMULATION_EXEC) && !defined(TET_MPI_EXEC))
