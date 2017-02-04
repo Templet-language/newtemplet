@@ -35,7 +35,7 @@ void shufle()
 	for(int j=0;j<W;j++) field[i][j]=rand();
 }
 
-void shufle_seq()
+void shufle1()
 {
 	srand(0);
 	for(int i=0;i<H;i++)
@@ -117,42 +117,42 @@ void min_max()
 	tet_mid = (tet_min + tet_max) / 2;
 }
 
-struct chan;
-struct proc;
+struct message;
+struct actor;
 
 struct engine{
 	volatile int active;
 	std::mutex mtx;
 	std::condition_variable cv;
-	std::queue<chan*> ready;
+	std::queue<message*> ready;
 };
 
-struct proc{
+struct actor{
 	std::mutex mtx;
-	void(*recv)(chan*, proc*);
+	void(*recv)(message*, actor*);
 };
 
-struct chan{
-	proc*p;
+struct message{
+	actor*a;
 	bool sending;
 };
 
-inline void send(engine*e, chan*c, proc*p)
+inline void send(engine*e, message*m, actor*a)
 {
-	if (c->sending) return;
-	c->sending = true;	c->p = p;
+	if (m->sending) return;
+	m->sending = true;	m->a = a;
 	std::unique_lock<std::mutex> lck(e->mtx);
-	e->ready.push(c);	e->cv.notify_one();
+	e->ready.push(m);	e->cv.notify_one();
 }
 
-inline bool access(chan*c, proc*p)
+inline bool access(message*m, actor*a)
 {
-	return c->p == p && !c->sending;
+	return m->a == a && !m->sending;
 }
 
 void tfunc(engine*e)
 {
-	chan*c; proc*p;
+	message*m; actor*a;
 
 	for (;;){
 		{
@@ -163,14 +163,14 @@ void tfunc(engine*e)
 				e->cv.wait(lck);
 				e->active++;
 			}
-			c = e->ready.front();
+			m = e->ready.front();
 			e->ready.pop();
 		}
-		p = c->p;
+		a = m->a;
 		{
-			std::unique_lock<std::mutex> lck(p->mtx);
-			c->sending = false;
-			p->recv(c, p);
+			std::unique_lock<std::mutex> lck(a->mtx);
+			m->sending = false;
+			a->recv(m, a);
 		}
 	}
 }
@@ -188,22 +188,22 @@ double run(engine*e, int n = 1)
 const int N = H - 2;
 
 engine e;
-proc ps[N];
-chan cs[N - 1];
+actor  as[N];
+message ms[N - 1];
 int  ts[N];
 
-void recv(chan* c, proc* p)
+void recv(message* , actor* a)
 {
-	int pid = (int)(p - ps);
+	int id = (int)(a - as);
 
-	if ((pid == 0 || access(&cs[pid - 1], p)) &&
-		(pid == N - 1 || access(&cs[pid], p)) &&
-		(ts[pid] <= T)){
+	if ((id == 0 || access(&ms[id - 1], a)) &&
+		(id == N - 1 || access(&ms[id], a)) &&
+		(ts[id] <= T)){
 
-		op(pid+1);	ts[pid]++;
+		op(id+1);	ts[id]++;
 
-		if (pid != 0)	send(&e, &cs[pid - 1], &ps[pid - 1]);
-		if (pid != N - 1)	send(&e, &cs[pid], &ps[pid + 1]);
+		if (id != 0)	send(&e, &ms[id - 1], &as[id - 1]);
+		if (id != N - 1)	send(&e, &ms[id], &as[id + 1]);
 	}
 }
 
@@ -211,13 +211,13 @@ double par_tet()
 {
 	for (int i = 0; i < N; i++)
 	{
-		ps[i].recv = recv; ts[i] = 1;
+		as[i].recv = recv; ts[i] = 1;
 	}
 	for (int i = 0; i < N - 1; i++)
 	{
-		cs[i].p = &ps[i]; cs[i].sending = false;
+		ms[i].a = &as[i]; ms[i].sending = false;
 	}
-	send(&e, &cs[0], &ps[0]);
+	send(&e, &ms[0], &as[0]);
 
 	return run(&e, omp_get_max_threads());
 }
@@ -225,7 +225,7 @@ double par_tet()
 void main()
 {
 	for (int i = 0; i < OBS_N; i++){
-		shufle_seq();	obs_seq[i] = seq_alg();
+		shufle1();	obs_seq[i] = seq_alg();
 		shufle();	obs_omp[i] = par_omp(); cout << (compare() ? "OMP Ok " : "something wrong in OMP ");
 		shufle();	obs_tet[i] = par_tet(); cout << (compare() ? "Templet Ok " : "something wrong in Templet ");
 		cout << (int)((float)(i+1)/OBS_N*100) << "% done" << endl;
@@ -240,3 +240,29 @@ void main()
 	cout << "\ntet_min  = " << tet_min << " sec; " << "\ntet_mid  = " << tet_mid << " sec; \ntet_max  = " << tet_max << " sec\n";
 }
 
+/*
+public class MyActor extends UntypedActor{
+	public int id;
+	
+	public bool access_ms_id_minus_1 = false;
+	public bool access_ms_id = false;
+
+	public ActorRef id_minus_1 = null;
+	public ActorRef id_plus_1 = null;
+
+	public void onRecieve(Object m){ // Akka analog of void recv(message* , actor* a)
+		access_ms_id_1 = ((Integer)m.intValue() == id - 1);
+		access_ms_id = ((Integer)m.intValue == id);
+
+		if ((id == 0 || access_ms_id_minus_1) &&
+			(id == N - 1 || access_ms_id)) &&
+			(ts[id] <= T)){
+
+			op(id + 1);	ts[id]++;
+
+			if (id != 0)	 id_minus_1.sendOneWay(Integer(id - 1));
+			if (id != N - 1) id_plus_1.sendOneWay(Integer(id));
+		}
+	}
+}
+*/
