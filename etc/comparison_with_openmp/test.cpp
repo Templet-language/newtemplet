@@ -251,8 +251,8 @@ public class MyActor extends UntypedActor{
 	public ActorRef id_plus_1 = null;
 
 	public void onRecieve(Object m){ // Akka analog of void recv(message* , actor* a)
-		access_ms_id_1 = ((Integer)m.intValue() == id - 1);
-		access_ms_id = ((Integer)m.intValue == id);
+		if ((Integer)m.intValue() == id - 1) access_ms_id_minus_1 = true;
+		if((Integer)m.intValue == id) access_ms_id = true;
 
 		if ((id == 0 || access_ms_id_minus_1) &&
 			(id == N - 1 || access_ms_id)) &&
@@ -260,8 +260,8 @@ public class MyActor extends UntypedActor{
 
 			op(id + 1);	ts[id]++;
 
-			if (id != 0)	 id_minus_1.sendOneWay(Integer(id - 1));
-			if (id != N - 1) id_plus_1.sendOneWay(Integer(id));
+			if (id != 0){id_minus_1.sendOneWay(Integer(id - 1));access_ms_id_minus_1 = false;}
+			if (id != N - 1){id_plus_1.sendOneWay(Integer(id));access_ms_id = false;}
 		}
 	}
 }
