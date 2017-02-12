@@ -1,0 +1,97 @@
+Test results for H = 400; W = 800; T = 800; OMP max threads  = 4
+
+seq_min  = 1.35271 sec;
+seq_mid  = 1.35754 sec;
+seq_max  = 1.36236 sec
+
+omp_min  = 0.381245 sec;
+omp_mid  = 0.409155 sec;
+omp_max  = 0.437065 sec
+
+tet_min  = 0.405917 sec;
+tet_mid  = 0.422257 sec;
+tet_max  = 0.438596 sec
+
+Test results for H = 500; W = 1000; T = 1000; OMP max threads  = 4
+
+seq_min  = 3.02529 sec;
+seq_mid  = 3.02886 sec;
+seq_max  = 3.03244 sec
+
+omp_min  = 0.874662 sec;
+omp_mid  = 0.95846 sec;
+omp_max  = 1.04226 sec
+
+tet_min  = 0.911324 sec;
+tet_mid  = 0.927153 sec;
+tet_max  = 0.942981 sec
+
+Test results for H = 600; W = 1200; T = 1200; OMP max threads  = 4
+
+seq_min  = 5.23317 sec;
+seq_mid  = 5.23846 sec;
+seq_max  = 5.24374 sec
+
+omp_min  = 1.74811 sec;
+omp_mid  = 1.77316 sec;
+omp_max  = 1.7982 sec
+
+tet_min  = 1.79777 sec;
+tet_mid  = 1.81579 sec;
+tet_max  = 1.8338 sec
+
+Test results for H = 700; W = 1400; T = 1400; OMP max threads  = 4
+
+seq_min  = 7.35111 sec;
+seq_mid  = 7.37935 sec;
+seq_max  = 7.40759 sec
+
+omp_min  = 2.89556 sec;
+omp_mid  = 2.92696 sec;
+omp_max  = 2.95837 sec
+
+tet_min  = 2.99112 sec;
+tet_mid  = 3.01996 sec;
+tet_max  = 3.04879 sec
+
+Test results for H = 800; W = 1600; T = 1600; OMP max threads  = 4
+
+seq_min  = 12.4454 sec;
+seq_mid  = 12.4649 sec;
+seq_max  = 12.4845 sec
+
+omp_min  = 4.45275 sec;
+omp_mid  = 4.52577 sec;
+omp_max  = 4.59878 sec
+
+tet_min  = 4.59174 sec;
+tet_mid  = 4.6093 sec;
+tet_max  = 4.62686 sec
+
+Test results for H = 900; W = 1800; T = 1800; OMP max threads  = 4
+
+seq_min  = 17.7292 sec;
+seq_mid  = 17.7397 sec;
+seq_max  = 17.7502 sec
+
+omp_min  = 6.36887 sec;
+omp_mid  = 6.45328 sec;
+omp_max  = 6.5377 sec
+
+tet_min  = 6.49767 sec;
+tet_mid  = 6.58208 sec;
+tet_max  = 6.66649 sec
+
+Test results for H = 1000; W = 2000; T = 2000; OMP max threads  = 4
+
+seq_min  = 21.0053 sec;
+seq_mid  = 21.0901 sec;
+seq_max  = 21.1749 sec
+
+omp_min  = 8.73674 sec;
+omp_mid  = 8.97235 sec;
+omp_max  = 9.20796 sec
+
+tet_min  = 8.95133 sec;
+tet_mid  = 9.05796 sec;
+tet_max  = 9.1646 sec

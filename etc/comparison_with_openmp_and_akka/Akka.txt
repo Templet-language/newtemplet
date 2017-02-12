@@ -1,0 +1,76 @@
+Test results for H = 400; W = 800; T = 800
+
+seq_min  = 1.718734502 sec; 
+seq_mid  = 1.7913139144999999 sec; 
+seq_max  = 1.863893327 sec
+
+
+akka_min  = 0.600220805 sec; 
+akka_mid  = 0.882331002 sec; 
+akka_max  = 1.164441199 sec
+
+Test results for H = 500; W = 1000; T = 1000
+
+seq_min  = 3.417818987 sec; 
+seq_mid  = 3.5148906364999997 sec; 
+seq_max  = 3.611962286 sec
+
+
+akka_min  = 1.030652546 sec; 
+akka_mid  = 1.2956955725000001 sec; 
+akka_max  = 1.560738599 sec
+
+Test results for H = 600; W = 1200; T = 1200
+
+seq_min  = 6.040489834 sec; 
+seq_mid  = 6.147775943999999 sec; 
+seq_max  = 6.255062054 sec
+
+
+akka_min  = 1.631613403 sec; 
+akka_mid  = 1.872959775 sec; 
+akka_max  = 2.114306147 sec
+
+Test results for H = 700; W = 1400; T = 1400
+
+seq_min  = 9.679885316 sec; 
+seq_mid  = 9.8043985925 sec; 
+seq_max  = 9.928911869 sec
+
+
+akka_min  = 2.508281862 sec; 
+akka_mid  = 2.7661778445 sec; 
+akka_max  = 3.024073827 sec
+
+Test results for H = 800; W = 1600; T = 1600
+
+seq_min  = 14.537548507 sec; 
+seq_mid  = 14.6572576845 sec; 
+seq_max  = 14.776966862 sec
+
+
+akka_min  = 3.56822158 sec; 
+akka_mid  = 3.791176461 sec; 
+akka_max  = 4.014131342 sec
+
+Test results for H = 900; W = 1800; T = 1800
+
+seq_min  = 20.764163873 sec; 
+seq_mid  = 20.906710527500003 sec; 
+seq_max  = 21.049257182 sec
+
+
+akka_min  = 5.062579929 sec; 
+akka_mid  = 5.4204756925 sec; 
+akka_max  = 5.778371456 sec
+
+Test results for H = 1000; W = 2000; T = 2000
+
+seq_min  = 28.513568515 sec; 
+seq_mid  = 28.759408524 sec; 
+seq_max  = 29.005248533 sec
+
+
+akka_min  = 7.435231258 sec; 
+akka_mid  = 7.6892083435 sec; 
+akka_max  = 7.943185429 sec

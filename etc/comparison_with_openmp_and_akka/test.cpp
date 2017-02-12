@@ -8,7 +8,7 @@
 
 using namespace std;
 
-const int SCALE = 1500;
+const int SCALE = 400;
 
 const int W = SCALE*2;
 const int H = SCALE;
