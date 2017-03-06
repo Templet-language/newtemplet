@@ -17,6 +17,7 @@
 
 #include <iostream>
 #include <templet.hpp>
+
 using namespace std;
 
 /*$TET$*/
@@ -37,7 +38,6 @@ struct mes : message{
 	void send();
 
 /*$TET$mes$$data*/
-	mes() { _sending = false; }
 	char _mes[100];
 /*$TET$*/
 };
