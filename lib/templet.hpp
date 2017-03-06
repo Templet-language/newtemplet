@@ -16,7 +16,7 @@
 
 #pragma once
 
-namespace TEMPLET{ // runtime library interface
+namespace TEMPLET{
 
 	struct actor;
 	struct message;
@@ -42,50 +42,18 @@ namespace TEMPLET{ // runtime library interface
 
 	inline void save(saver*, void*, size_t);
 	inline void restore(restorer*, void*, size_t);
-
-	
-namespace def{ // domain-specific language interface
-
-		class message{
-		public:
-			message(std::string name);
-			message();
-			~message();
-		public:
-			message& name(std::string name);
-			message& duplex();
-			message& serializable();
-			message& in(std::string name, bool content = true);
-			message& out(std::string name, bool content = true);
-		};
-
-		class actor{
-		public:
-			actor(std::string name);
-			actor();
-			~actor();
-		public:
-			actor& name(std::string name);
-			actor& serializable();
-			actor& startable();
-			actor& in(std::string port_name, std::string message_name);
-			actor& out(std::string port_name, std::string message_name);
-			actor& any();
-		};
-
-}
 }
 
-#if defined(TET_DEBUG_EXEC) || (!defined(TET_SERIAL_EXEC) && !defined(TET_PARALLEL_EXEC) && !defined(TET_EMULATION_EXEC) && !defined(TET_MPI_EXEC))
+#if defined(DEBUG_EXECUTION) || (!defined(SERIAL_EXECUTION) && !defined(PARALLEL_EXECUTION) && !defined(EMULATION_EXECUTION) && !defined(MPI_EXECUTION))
 
-#ifndef TET_DEBUG_EXEC
-#define TET_DEBUG_EXEC
+#ifndef DEBUG_EXECUTION
+#define DEBUG_EXECUTION
 #endif
 
 #include <vector>
 #include <assert.h>
 
-#ifdef TET_DEBUG_SERIALIZATION
+#ifdef DEBUG_SERIALIZATION
 
 #include <memory.h>
 #define ALLOC_SIZE		4096
@@ -97,7 +65,7 @@ namespace TEMPLET{
 	struct actor{
 		void(*_recv)(actor*,message*,int tag);
 		engine* _engine;
-#ifdef TET_DEBUG_SERIALIZATION
+#ifdef DEBUG_SERIALIZATION
 		void(*_save)(actor*,saver*);
 		void(*_restore)(actor*,restorer*);
 #endif
@@ -106,14 +74,14 @@ namespace TEMPLET{
 	struct message{
 		actor* _actor;
 		bool _sending;
-#ifdef TET_DEBUG_SERIALIZATION
+#ifdef DEBUG_SERIALIZATION
 		void(*_save)(message*,saver*);
 		void(*_restore)(message*,restorer*);
 #endif
 		int _tag;
 	};
 
-#ifdef TET_DEBUG_SERIALIZATION
+#ifdef DEBUG_SERIALIZATION
 	struct saver{ engine*_engine; };
 	struct restorer{ engine*_engine; };
 #endif
@@ -121,7 +89,7 @@ namespace TEMPLET{
 	struct engine{
 		std::vector<message*> _ready;
 		bool _stop;
-#ifdef TET_DEBUG_SERIALIZATION
+#ifdef DEBUG_SERIALIZATION
 		void* _buffer;
 		size_t _buffer_size;
 		size_t _buffer_cursor;
@@ -133,7 +101,7 @@ namespace TEMPLET{
 	inline void init(actor*a, engine*e, void(*recv)(actor*, message*, int tag), void(*save)(actor*, saver*), void(*restore)(actor*, restorer*))
 	{
 		a->_recv = recv; a->_engine = e;
-#ifdef TET_DEBUG_SERIALIZATION
+#ifdef DEBUG_SERIALIZATION
 		a->_save = save; 
 		a->_restore = restore;
 #endif
@@ -146,7 +114,7 @@ namespace TEMPLET{
 	inline void init(message*m, engine*e, void(*save)(message*,saver*), void(*restore)(message*, restorer*))
 	{
 		m->_sending = false; m->_actor = 0; m->_tag = 0;
-#ifdef TET_DEBUG_SERIALIZATION
+#ifdef DEBUG_SERIALIZATION
 		m->_save = save;
 		m->_restore = restore;
 #endif
@@ -183,12 +151,12 @@ namespace TEMPLET{
 	inline void run(engine*e)
 	{
 		size_t rsize;
-		while (rsize = e->_ready.size()){
-			int n = rand() % rsize;	auto it = e->_ready.begin() + n;
+		while ((rsize = e->_ready.size())){
+			int n = rand() % rsize;	std::vector<message*>::iterator it = e->_ready.begin() + n;
 			message* m = *it; e->_ready.erase(it); m->_sending = false;
 			actor* a = m->_actor;
 
-#ifdef TET_DEBUG_SERIALIZATION
+#ifdef DEBUG_SERIALIZATION
 			if (m->_save){
 				e->_buffer_cursor = 0;
 				m->_save(m,&e->_saver);
@@ -215,7 +183,7 @@ namespace TEMPLET{
 	inline bool stat(void*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp){ return false; }
 	inline bool stat(engine*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp){ return false; }
 }
-#elif defined(TET_SERIAL_EXEC)
+#elif defined(SERIAL_EXECUTION)
 
 #include <queue>
 
@@ -290,12 +258,51 @@ namespace TEMPLET{
 	inline bool stat(void*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp){ return false; }
 	inline bool stat(engine*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp){ return false; }
 }
-#elif defined(TET_PARALLEL_EXEC)
+#elif defined(PARALLEL_EXECUTION)
+
+#if !defined(USE_OPENMP)
 
 #include <thread>
 #include <mutex>
 #include <condition_variable>
 #include <queue>
+
+#else
+
+#include <omp.h>
+#include <queue>
+
+namespace std {
+	struct mutex {
+		mutex() { omp_init_lock(&_lock); }
+		~mutex() { omp_destroy_lock(&_lock); }
+		omp_lock_t _lock;
+	};
+
+	template <class T>
+	struct unique_lock {
+		unique_lock(T&m) :_mutex(m) { while (!omp_test_lock(&(_mutex._lock))); }
+		~unique_lock() { omp_unset_lock(&(_mutex._lock)); }
+		T& _mutex;
+	};
+
+	struct condition_variable {
+		condition_variable() :_signal(0) { }
+		~condition_variable() { }
+		void notify_one() { _signal = 1; }
+		void wait(unique_lock<mutex>&m) {
+			_signal = 0;
+			omp_unset_lock(&m._mutex._lock);
+			while (!_signal);
+			while (!omp_test_lock(&m._mutex._lock));
+		}
+		char _reserved1[64];
+		volatile int _signal;
+		char _reserved2[64];
+	};
+}
+
+#endif
 
 namespace TEMPLET{
 
@@ -349,7 +356,9 @@ namespace TEMPLET{
 		m->_tag = tag;
 
 		std::unique_lock<std::mutex> lck(e->_mtx);
-		e->_ready.push(m);	e->_cv.notify_one();
+
+		if (e->_ready.empty()) {e->_ready.push(m); e->_cv.notify_one();	}
+		else e->_ready.push(m);
 	}
 
 	inline bool access(message*m, actor*a)
@@ -398,17 +407,28 @@ namespace TEMPLET{
 
 	inline void run(engine*e)
 	{
+#if defined(USE_OPENMP)
+#pragma omp parallel 
+		{
+#pragma omp single
+			{
+				e->_active = omp_get_num_threads();
+			}
+			tfunc(e);
+		}
+#else
 		unsigned n = std::thread::hardware_concurrency();
 		std::vector<std::thread> threads(n);
 		e->_active = n;
 		for (unsigned i = 0; i<n; i++) threads[i] = std::thread(tfunc, e);
 		for (auto& th : threads) th.join();
+#endif
 	}
 
 	inline bool stat(void*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp){ return false; }
 	inline bool stat(engine*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp){ return false; }
 }
-#elif defined(TET_EMULATION_EXEC)
+#elif defined(EMULATION_EXECUTION)
 
 #include <vector>
 #include <queue>
@@ -564,7 +584,7 @@ namespace TEMPLET{
 		return true;
 	}
 }
-#elif defined(TET_MPI_EXEC)
+#elif defined(MPI_EXECUTION)
 
 #include <mpi.h>
 #include <assert.h>
@@ -871,7 +891,7 @@ namespace TEMPLET{
 }
 #endif
 
-#if (defined(TET_DEBUG_SERIALIZATION) && defined(TET_DEBUG_EXEC)) || defined(TET_MPI_EXEC)
+#if (defined(DEBUG_SERIALIZATION) && defined(DEBUG_EXECUTION)) || defined(MPI_EXECUTION)
 
 namespace TEMPLET{
 	inline void init_buffer(engine*e)
@@ -911,3 +931,4 @@ namespace TEMPLET{
 	inline void restore(restorer*, void*, size_t){}
 }
 #endif
+

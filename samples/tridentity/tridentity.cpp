@@ -16,18 +16,6 @@
 /*--------------------------------------------------------------------------*/
 #include <iostream>
 #include <templet.hpp>
-
-/*$TÅT$def*/
-void def()
-{
-	TEMPLET::def::message m("value_message"); m.serializable().duplex();
-
-	TEMPLET::def::actor mst("master"); mst.serializable().startable().
-		out("sin2_port", "value_message").out("cos2_port", "value_message");
-
-	TEMPLET::def::actor wkr("worker");
-		wkr.in("master_port", "value_message");
-}
 /*$TET$*/
 
 using namespace TEMPLET;
@@ -192,6 +180,4 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
-/*$TET$*/
-/*$TET$message$$data*/
 /*$TET$*/
