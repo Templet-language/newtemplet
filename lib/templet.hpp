@@ -44,7 +44,7 @@ namespace TEMPLET{
 	inline void restore(restorer*, void*, size_t);
 }
 
-#if defined(DEBUG_EXECUTION) || (!defined(SERIAL_EXECUTION) && !defined(PARALLEL_EXECUTION) && !defined(EMULATION_EXECUTION) && !defined(MPI_EXECUTION))
+#if defined(DEBUG_EXECUTION) || (!defined(SERIAL_EXECUTION) && !defined(PARALLEL_EXECUTION) && !defined(SIMULATED_EXECUTION) && !defined(DISTRIBUTED_EXECUTION))
 
 #ifndef DEBUG_EXECUTION
 #define DEBUG_EXECUTION
@@ -428,7 +428,7 @@ namespace TEMPLET{
 	inline bool stat(void*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp){ return false; }
 	inline bool stat(engine*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp){ return false; }
 }
-#elif defined(EMULATION_EXECUTION)
+#elif defined(SIMULATED_EXECUTION)
 
 #include <vector>
 #include <queue>
@@ -584,7 +584,7 @@ namespace TEMPLET{
 		return true;
 	}
 }
-#elif defined(MPI_EXECUTION)
+#elif defined(DISTRIBUTED_EXECUTION)
 
 #include <mpi.h>
 #include <assert.h>
@@ -644,7 +644,7 @@ namespace TEMPLET{
 		a->_save = save;
 		a->_restore = restore;
 		a->_mpi_rank = 0;
-		a->_id = e->_actors.size();
+		a->_id = (int)e->_actors.size();
 		e->_actors.push_back(a);
 	}
 
@@ -668,7 +668,7 @@ namespace TEMPLET{
 		m->_sending = false; m->_actor = 0; m->_tag = 0;
 		m->_save = save;
 		m->_restore = restore;
-		m->_id = e->_messages.size();
+		m->_id = (int)e->_messages.size();
 		e->_messages.push_back(m);
 	}
 
@@ -711,7 +711,7 @@ namespace TEMPLET{
 		e->_buffer_cursor = 0;
 		save(&e->_saver, &a->_id, sizeof(a->_id));
 		a->_save(a, &e->_saver);
-		MPI_Send(e->_buffer, e->_buffer_cursor, MPI_BYTE, rank, TAG_ACTOR, MPI_COMM_WORLD);
+		MPI_Send(e->_buffer, (int)e->_buffer_cursor, MPI_BYTE, rank, TAG_ACTOR, MPI_COMM_WORLD);
 	}
 
 	inline void recv_actor(engine*e, int rank)
@@ -746,7 +746,7 @@ namespace TEMPLET{
 
 		m->_save(m,&e->_saver);
 
-		MPI_Send(e->_buffer, e->_buffer_cursor, MPI_BYTE, rank, TAG_MESSAGE, MPI_COMM_WORLD);
+		MPI_Send(e->_buffer, (int)e->_buffer_cursor, MPI_BYTE, rank, TAG_MESSAGE, MPI_COMM_WORLD);
 	}
 
 	inline void recv_message(engine*e)
@@ -878,7 +878,7 @@ namespace TEMPLET{
 			}
 		}
 
-		int not_local_actors_num = e->_actors.size() - num_of_actors_with_rank(e, MASTER);
+		int not_local_actors_num = (int)e->_actors.size() - num_of_actors_with_rank(e, MASTER);
 
 		for (int i = 0; i < not_local_actors_num; i++)
 			recv_actor(e, MPI_ANY_SOURCE);
@@ -908,7 +908,7 @@ namespace TEMPLET{
 	{
 		engine* e = s->_engine;
 		if (e->_buffer_size < size + e->_buffer_cursor){
-			int blocks = (size + e->_buffer_cursor) / ALLOC_SIZE + 1; 
+			int blocks = (int)(size + e->_buffer_cursor) / ALLOC_SIZE + 1; 
 			e->_buffer = realloc(e->_buffer, blocks*ALLOC_SIZE);
 			assert(e->_buffer);
 			e->_buffer_size = blocks * ALLOC_SIZE;

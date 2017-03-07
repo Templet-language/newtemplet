@@ -104,7 +104,7 @@ struct pong : actor{
 };
 
 /*$TET$footer*/
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	my_engine e(argc, argv);
 

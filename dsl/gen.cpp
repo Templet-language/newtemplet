@@ -445,13 +445,13 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		"\tmy_engine(int argc, char *argv[]){\n"
 		"\t\t::init(this, argc, argv);\n"
 		"\t}\n"
-		"\tvoid run(){ ::run(this); }\n"
-		"\tvoid map(){ ::map(this); }\n"
+		"\tvoid run(){ TEMPLET::run(this); }\n"
+		"\tvoid map(){ TEMPLET::map(this); }\n"
 		"};\n";
 
 	outf << endl;
 	
-	outf << "enum MES_TAGS{ ";
+	outf << "enum MESSAGE_TAGS{ ";
 	
 	bool first = true;
 	int  mes_tags = false;
@@ -486,10 +486,10 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		if (m.serilizable){
 			outf << endl;
 
-			outf << "\tfriend void "<<m.name<<"_save_adapter(message*m, saver*s){\n"
+			outf << "\tstatic void "<<m.name<<"_save_adapter(message*m, saver*s){\n"
 				"\t\t((value_message*)m)->save(s);\n"
 				"\t}\n\n"
-				"\tfriend void "<<m.name<<"_restore_adapter(message*m, restorer*r){\n"
+				"\tstatic void "<<m.name<<"_restore_adapter(message*m, restorer*r){\n"
 				"\t\t((value_message*)m)->restore(r);\n"
 				"\t}\n";
 		}
@@ -524,13 +524,13 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 
 			outf <<
 				"\tbool access(actor*a,tag t){\n"
-				"\t\treturn ::access(this, a) && t==_tag;\n"
+				"\t\treturn TEMPLET::access(this, a) && t==_tag;\n"
 				"\t}\n\n"
 
 				"\tvoid send(tag t){\n"
 				"\t\t_tag = t;\n"
-				"\t\tif (_where == CLI){ ::send(this, _srv, _server_id); _where = SRV; }\n"
-				"\t\telse if (_where == SRV){ ::send(this, _cli, _client_id); _where = CLI; }\n"
+				"\t\tif (_where == CLI){ TEMPLET::send(this, _srv, _server_id); _where = SRV; }\n"
+				"\t\telse if (_where == SRV){ TEMPLET::send(this, _cli, _client_id); _where = CLI; }\n"
 				"\t}\n";
 		}
 		else{
@@ -540,23 +540,23 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			
 				outf <<
 				"\tbool access(actor*a){\n"
-					"\t\treturn ::access(this, a);\n"
+					"\t\treturn TEMPLET::access(this, a);\n"
 					"\t}\n\n"
 
 					"\tvoid send(){\n"
-					"\t\tif (_where == CLI){ ::send(this, _srv, _server_id); _where = SRV; }\n"
-					"\t\telse if (_where == SRV){ ::send(this, _cli, _client_id); _where = CLI; }\n"
+					"\t\tif (_where == CLI){ TEMPLET::send(this, _srv, _server_id); _where = SRV; }\n"
+					"\t\telse if (_where == SRV){ TEMPLET::send(this, _cli, _client_id); _where = CLI; }\n"
 					"\t}\n";
 
 			}
 			else{
 				outf <<
 					"\tbool access(actor*a){\n"
-					"\t\treturn ::access(this, a);\n"
+					"\t\treturn TEMPLET::access(this, a);\n"
 					"\t}\n\n"
 
 					"\tvoid send(actor*a){\n"
-					"\t\t::send(this, a, MES_"<< m.name <<");\n"
+					"\t\tTEMPLET::send(this, a, MES_"<< m.name <<");\n"
 					"\t}\n";
 			}
 		}
@@ -565,12 +565,12 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			outf << endl;
 			outf << "\tvoid save(saver*s){\n"
 				"/*$TET$" << m.name << "$$save*/\n"
-				"\t\t//::save(s, &x, sizeof(x));\n"
+				"\t\t//TEMPLET::save(s, &x, sizeof(x));\n"
 				"/*$TET$*/\n"
 				"\t}\n\n"
 				"\tvoid restore(restorer*r){\n"
 				"/*$TET$" << m.name << "$$restore*/\n"
-				"\t\t//::restore(r, &x, sizeof(x));\n"
+				"\t\t//TEMPLET::restore(r, &x, sizeof(x));\n"
 				"/*$TET$*/\n"
 				"\t}\n";
 		}
@@ -606,8 +606,8 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			outf << "\tenum tag{";
 			for (auto& x : a.ports){
 				if (a.response_any || a.initially_active){
-					if (first){ outf << "TAG_" << x.name << "=MES_TAGS::START+" << ++tag_num; first = false; }
-					else outf << ",TAG_" << x.name << "=MES_TAGS::START+" << ++tag_num;
+					if (first){ outf << "TAG_" << x.name << "=START+" << ++tag_num; first = false; }
+					else outf << ",TAG_" << x.name << "=START+" << ++tag_num;
 				}
 				else{
 					if (first){ outf << "TAG_" << x.name; first = false; }
@@ -639,7 +639,7 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 
 		if (a.initially_active){
 			outf << "\t\t::init(&_start, &e);\n"
-				"\t\t::send(&_start, this, MES_TAGS::START);\n";
+				"\t\t::send(&_start, this, START);\n";
 		}
 
 		outf <<
@@ -649,19 +649,19 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 
 		if (a.serilizable){
 			outf <<
-				"\tfriend void "<<a.name<<"_save_adapter(actor*a, saver*s){\n"
+				"\tstatic void "<<a.name<<"_save_adapter(actor*a, saver*s){\n"
 				"\t\t((" << a.name << "*)a)->save(s);\n"
 				"\t}\n\n"
 
-				"\tfriend void "<<a.name<<"_restore_adapter(actor*a, restorer*r){\n"
+				"\tstatic void "<<a.name<<"_restore_adapter(actor*a, restorer*r){\n"
 				"\t\t((" << a.name << "*)a)->restore(r);\n"
 				"\t}\n\n";
 		}
 
 		outf <<
-			"\tvoid at(int _at){ ::at(this, _at); }\n"
-			"\tvoid delay(double t){ ::delay(this, t); }\n"
-			"\tvoid stop(){ ::stop(this); }\n";
+			"\tvoid at(int _at){ TEMPLET::at(this, _at); }\n"
+			"\tvoid delay(double t){ TEMPLET::delay(this, t); }\n"
+			"\tvoid stop(){ TEMPLET::stop(this); }\n";
 
 		if (!a.ports.empty()) outf << endl;
 
@@ -674,16 +674,16 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 
 		outf << endl;
 
-		outf <<	"\tfriend void "<<a.name<<"_recv_adapter (actor*a, message*m, int tag){\n";
+		outf <<	"\tstatic void "<<a.name<<"_recv_adapter (actor*a, message*m, int tag){\n";
 		outf << "\t\tswitch(tag){\n";
 		
 		for (auto& m : mlist)
-			if (!m.duplex && a.response_any)	outf << "\t\t\tcase MES_TAGS::MES_" << m.name << ": ((" << a.name << "*)a)->recv_" << m.name << "(*((" << m.name << "*)m)); break;\n";
+			if (!m.duplex && a.response_any)	outf << "\t\t\tcase MES_" << m.name << ": ((" << a.name << "*)a)->recv_" << m.name << "(*((" << m.name << "*)m)); break;\n";
 	
 		for (auto& p : a.ports)
 			outf << "\t\t\tcase TAG_" << p.name << ": ((" << a.name << "*)a)->" << p.name << "(*((" << p.message_name << "*)m)); break;\n";
 		
-		if (a.initially_active) outf << "\t\t\tcase MES_TAGS::START: (("<< a.name <<"*)a)->start(); break;\n";
+		if (a.initially_active) outf << "\t\t\tcase START: (("<< a.name <<"*)a)->start(); break;\n";
 		
 		outf << "\t\t}\n";
 		outf <<	"\t}\n";
@@ -720,12 +720,12 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			outf << endl;
 			outf << "\tvoid save(saver*s){\n"
 				"/*$TET$" << a.name << "$$save*/\n"
-				"\t\t//::save(s, &x, sizeof(x));\n"
+				"\t\t//TEMPLET::save(s, &x, sizeof(x));\n"
 				"/*$TET$*/\n"
 				"\t}\n\n"
 				"\tvoid restore(restorer*r){\n"
 				"/*$TET$" << a.name << "$$restore*/\n"
-				"\t\t//::restore(r, &x, sizeof(x));\n"
+				"\t\t//TEMPLET::restore(r, &x, sizeof(x));\n"
 				"/*$TET$*/\n"
 				"\t}\n";
 		}
