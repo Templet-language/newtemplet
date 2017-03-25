@@ -30,7 +30,7 @@ namespace TEMPLET{
 	inline void stop(actor*);
 	inline void delay(actor*, double);
 
-	inline void init(message*, engine*, void(*save)(message*,saver*)=0, void(*restore)(message*, restorer*) = 0);
+	inline void init(message*, engine*, void(*save)(message*,saver*)=0, void(*restore)(message*, restorer*)=0);
 	inline void send(message*, actor*,int tag);
 	inline bool access(message*, actor*);
 

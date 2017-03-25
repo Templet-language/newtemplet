@@ -12,13 +12,34 @@ struct my_engine : engine{
 	void map(){ TEMPLET::map(this); }
 };
 
-enum MESSAGE_TAGS{ START };
+enum MESSAGE_TAGS{ MES_mes1, START };
+
+#pragma templet ~mes1
+
+struct mes1 : message{
+	mes1(actor*a, engine*e){
+		::init(this, e);
+		_actor = a;
+	}
+
+	bool access(actor*a){
+		return TEMPLET::access(this, a);
+	}
+
+	void send(actor*a){
+		TEMPLET::send(this, a, MES_mes1);
+	}
+
+/*$TET$mes1$$data*/
+/*$TET$*/
+};
 
 #pragma templet ~mes=
 
 struct mes : message{
 	mes(actor*a, engine*e, int t) : _where(CLI), _cli(a), _client_id(t){
 		::init(this, e);
+		_actor = a;
 	}
 
 	bool access(actor*a){

@@ -293,6 +293,8 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		outf << "#pragma templet "; print_message(outf, m); outf << endl << endl;
 		outf << "struct " << m.name << " : message{\n";
 
+		if(!m.duplex)outf << "\t" << m.name << "(actor*a, engine*e);\n";
+
 		if (!m.subm.empty()){
 			bool first = true;
 			outf << "\tenum tag{";
@@ -481,6 +483,8 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		if (m.serilizable)	outf <<	"\t\t::init(this, e, "<<m.name<<"_save_adapter, "<<m.name<<"_restore_adapter);\n";
 		else outf << "\t\t::init(this, e);\n";
 		
+		outf << "\t\t_actor = a;\n";
+
 		outf << "\t}\n";
 
 		if (m.serilizable){
