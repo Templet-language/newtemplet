@@ -14,7 +14,7 @@ using namespace TEMPLET;
 struct task_result : message{
 
 	task_result(engine*e,actor*m,actor*w): _master(m), _worker(w) {
-		::init(this, e, save_adapter, restore_adapter);
+		::init(this, w, e, save_adapter, restore_adapter);
 		_call = FIRST_CALL;
 	}
 

@@ -8,45 +8,45 @@ struct my_engine : engine{
 	my_engine(int argc, char *argv[]){
 		::init(this, argc, argv);
 	}
-	void run(){ ::run(this); }
-	void map(){ ::map(this); }
+	void run(){ TEMPLET::run(this); }
+	void map(){ TEMPLET::map(this); }
 };
 
-enum MES_TAGS{ START };
+enum MESSAGE_TAGS{ START };
 
 #pragma templet ~value_message$=
 
 struct value_message : message{
 	value_message(actor*a, engine*e, int t) : _where(CLI), _cli(a), _client_id(t){
-		::init(this, e, value_message_save_adapter, value_message_restore_adapter);
+		::init(this, a, e, value_message_save_adapter, value_message_restore_adapter);
 	}
 
-	friend void value_message_save_adapter(message*m, saver*s){
+	static void value_message_save_adapter(message*m, saver*s){
 		((value_message*)m)->save(s);
 	}
 
-	friend void value_message_restore_adapter(message*m, restorer*r){
+	static void value_message_restore_adapter(message*m, restorer*r){
 		((value_message*)m)->restore(r);
 	}
 
 	bool access(actor*a){
-		return ::access(this, a);
+		return TEMPLET::access(this, a);
 	}
 
 	void send(){
-		if (_where == CLI){ ::send(this, _srv, _server_id); _where = SRV; }
-		else if (_where == SRV){ ::send(this, _cli, _client_id); _where = CLI; }
+		if (_where == CLI){ TEMPLET::send(this, _srv, _server_id); _where = SRV; }
+		else if (_where == SRV){ TEMPLET::send(this, _cli, _client_id); _where = CLI; }
 	}
 
 	void save(saver*s){
 /*$TET$value_message$$save*/
-		//::save(s, &x, sizeof(x));
+		//TEMPLET::save(s, &x, sizeof(x));
 /*$TET$*/
 	}
 
 	void restore(restorer*r){
 /*$TET$value_message$$restore*/
-		//::restore(r, &x, sizeof(x));
+		//TEMPLET::restore(r, &x, sizeof(x));
 /*$TET$*/
 	}
 
@@ -63,36 +63,36 @@ struct value_message : message{
 #pragma templet *master$(sin2_port!value_message,cos2_port!value_message)+
 
 struct master : actor{
-	enum tag{TAG_sin2_port=MES_TAGS::START+1,TAG_cos2_port=MES_TAGS::START+2};
+	enum tag{TAG_sin2_port=START+1,TAG_cos2_port=START+2};
 
 	master(my_engine&e):_sin2_port(this, &e, TAG_sin2_port),_cos2_port(this, &e, TAG_cos2_port){
 		::init(this, &e, master_recv_adapter, master_save_adapter, master_restore_adapter);
-		::init(&_start, &e);
-		::send(&_start, this, MES_TAGS::START);
+		::init(&_start, this, &e);
+		::send(&_start, this, START);
 /*$TET$master$master*/
 /*$TET$*/
 	}
 
-	friend void master_save_adapter(actor*a, saver*s){
+	static void master_save_adapter(actor*a, saver*s){
 		((master*)a)->save(s);
 	}
 
-	friend void master_restore_adapter(actor*a, restorer*r){
+	static void master_restore_adapter(actor*a, restorer*r){
 		((master*)a)->restore(r);
 	}
 
-	void at(int _at){ ::at(this, _at); }
-	void delay(double t){ ::delay(this, t); }
-	void stop(){ ::stop(this); }
+	void at(int _at){ TEMPLET::at(this, _at); }
+	void delay(double t){ TEMPLET::delay(this, t); }
+	void stop(){ TEMPLET::stop(this); }
 
 	value_message* sin2_port(){return &_sin2_port;}
 	value_message* cos2_port(){return &_cos2_port;}
 
-	friend void master_recv_adapter (actor*a, message*m, int tag){
+	static void master_recv_adapter (actor*a, message*m, int tag){
 		switch(tag){
 			case TAG_sin2_port: ((master*)a)->sin2_port(*((value_message*)m)); break;
 			case TAG_cos2_port: ((master*)a)->cos2_port(*((value_message*)m)); break;
-			case MES_TAGS::START: ((master*)a)->start(); break;
+			case START: ((master*)a)->start(); break;
 		}
 	}
 
@@ -113,13 +113,13 @@ struct master : actor{
 
 	void save(saver*s){
 /*$TET$master$$save*/
-		//::save(s, &x, sizeof(x));
+		//TEMPLET::save(s, &x, sizeof(x));
 /*$TET$*/
 	}
 
 	void restore(restorer*r){
 /*$TET$master$$restore*/
-		//::restore(r, &x, sizeof(x));
+		//TEMPLET::restore(r, &x, sizeof(x));
 /*$TET$*/
 	}
 
@@ -142,13 +142,13 @@ struct worker : actor{
 /*$TET$*/
 	}
 
-	void at(int _at){ ::at(this, _at); }
-	void delay(double t){ ::delay(this, t); }
-	void stop(){ ::stop(this); }
+	void at(int _at){ TEMPLET::at(this, _at); }
+	void delay(double t){ TEMPLET::delay(this, t); }
+	void stop(){ TEMPLET::stop(this); }
 
 	void master_port(value_message*m){m->_server_id=TAG_master_port; m->_srv=this;}
 
-	friend void worker_recv_adapter (actor*a, message*m, int tag){
+	static void worker_recv_adapter (actor*a, message*m, int tag){
 		switch(tag){
 			case TAG_master_port: ((worker*)a)->master_port(*((value_message*)m)); break;
 		}

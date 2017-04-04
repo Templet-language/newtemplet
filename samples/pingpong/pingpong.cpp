@@ -38,7 +38,7 @@ struct mes : message{
 	void send();
 
 /*$TET$mes$$data*/
-	char _mes[100];
+	string _mes;
 /*$TET$*/
 };
 
@@ -58,14 +58,14 @@ struct ping : actor{
 
 	void start(){
 /*$TET$ping$start*/
-		strcpy(_p._mes, "Hello PONG!!!");
+		_p._mes = "Hello PONG!!!";
 		_p.send();
 /*$TET$*/
 	}
 
 	void p(mes&m){
 /*$TET$ping$p*/
-		cout << m._mes;
+		cout << m._mes.c_str();
 		stop();
 /*$TET$*/
 	}
@@ -92,8 +92,8 @@ struct pong : actor{
 
 	void p(mes&m){
 /*$TET$pong$p*/
-		cout << m._mes << endl;
-		strcpy(m._mes, "Hello PING!!!");
+		cout << m._mes.c_str() << endl;
+		m._mes = "Hello PING!!!";
 		m.send();
 /*$TET$*/
 	}

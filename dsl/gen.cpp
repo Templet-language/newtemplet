@@ -293,7 +293,7 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		outf << "#pragma templet "; print_message(outf, m); outf << endl << endl;
 		outf << "struct " << m.name << " : message{\n";
 
-		if(!m.duplex)outf << "\t" << m.name << "(actor*a, engine*e);\n";
+		if(!m.duplex)outf << "\t" << m.name << "(actor*, engine*);\n";
 
 		if (!m.subm.empty()){
 			bool first = true;
@@ -480,10 +480,8 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		if (m.duplex)	outf << "\t" << m.name << "(actor*a, engine*e, int t) : _where(CLI), _cli(a), _client_id(t){\n";
 		else outf << "\t" << m.name << "(actor*a, engine*e){\n";
 
-		if (m.serilizable)	outf <<	"\t\t::init(this, e, "<<m.name<<"_save_adapter, "<<m.name<<"_restore_adapter);\n";
-		else outf << "\t\t::init(this, e);\n";
-		
-		outf << "\t\t_actor = a;\n";
+		if (m.serilizable)	outf <<	"\t\t::init(this, a, e, "<<m.name<<"_save_adapter, "<<m.name<<"_restore_adapter);\n";
+		else outf << "\t\t::init(this, a, e);\n";
 
 		outf << "\t}\n";
 
@@ -642,7 +640,7 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		else outf << "\t\t::init(this, &e, "<<a.name<<"_recv_adapter);\n";
 
 		if (a.initially_active){
-			outf << "\t\t::init(&_start, &e);\n"
+			outf << "\t\t::init(&_start, this, &e);\n"
 				"\t\t::send(&_start, this, START);\n";
 		}
 
