@@ -29,6 +29,8 @@ namespace TEMPLET{
 	inline bool at(actor*, int node);
 	inline void stop(actor*);
 	inline void delay(actor*, double);
+	inline double time(actor*);
+
 
 	inline void init(message*, actor*, engine*, void(*save)(message*,saver*)=0, void(*restore)(message*, restorer*)=0);
 	inline void send(message*, actor*,int tag);
@@ -110,6 +112,7 @@ namespace TEMPLET{
 	inline bool at(actor*, int node){ return false; }
 	inline void stop(actor*a){	a->_engine->_stop = true; }
 	inline void delay(actor*, double){}
+	inline double time(actor*) { return 0.0; }
 
 	inline void init(message*m, actor*a, engine*e, void(*save)(message*,saver*), void(*restore)(message*, restorer*))
 	{
@@ -213,6 +216,7 @@ namespace TEMPLET{
 	inline bool at(actor*, int node){ return false; }
 	inline void stop(actor*a){ a->_engine->_stop = true; }
 	inline void delay(actor*, double){}
+	inline double time(actor*) { return 0.0; }
 
 	inline void init(message*m, actor*a, engine*e, void(*save)(message*, saver*), void(*restore)(message*, restorer*))
 	{
@@ -333,6 +337,7 @@ namespace TEMPLET{
 
 	inline bool at(actor*, int node){ return false; }
 	inline void delay(actor*, double){}
+	inline double time(actor*) { return 0.0; }
 	
 	inline void stop(actor*a)
 	{ 
@@ -479,6 +484,12 @@ namespace TEMPLET{
 		engine*e = a->_engine;
 		e->_T1 += t;
 		e->_Tp += t;
+	}
+
+	inline double time(actor*a)
+	{ 
+		engine*e = a->_engine; 
+		return e->_Tp; 
 	}
 
 	inline void init(message*m, actor*a, engine*e, void(*save)(message*, saver*), void(*restore)(message*, restorer*))
@@ -662,6 +673,7 @@ namespace TEMPLET{
 	}
 	
 	inline void delay(actor*, double){}
+	inline double time(actor*) { return 0.0; }
 
 	inline void init(message*m, actor*a, engine*e, void(*save)(message*, saver*), void(*restore)(message*, restorer*))
 	{

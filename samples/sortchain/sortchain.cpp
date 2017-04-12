@@ -53,6 +53,7 @@ struct producer : actor{
 	}
 
 	void delay(double);
+	double time();
 	void at(int);
 	void stop();
 
@@ -92,6 +93,7 @@ struct sorter : actor{
 	}
 
 	void delay(double);
+	double time();
 	void at(int);
 	void stop();
 
@@ -148,6 +150,7 @@ struct stoper : actor{
 	}
 
 	void delay(double);
+	double time();
 	void at(int);
 	void stop();
 

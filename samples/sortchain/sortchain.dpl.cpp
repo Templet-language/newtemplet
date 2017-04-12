@@ -12,26 +12,7 @@ struct my_engine : engine{
 	void map(){ TEMPLET::map(this); }
 };
 
-enum MESSAGE_TAGS{ MES_mes1, START };
-
-#pragma templet ~mes1
-
-struct mes1 : message{
-	mes1(actor*a, engine*e){
-		::init(this, a, e);
-	}
-
-	bool access(actor*a){
-		return TEMPLET::access(this, a);
-	}
-
-	void send(actor*a){
-		TEMPLET::send(this, a, MES_mes1);
-	}
-
-/*$TET$mes1$$data*/
-/*$TET$*/
-};
+enum MESSAGE_TAGS{ START };
 
 #pragma templet ~mes=
 
@@ -74,6 +55,7 @@ struct producer : actor{
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }
+	double time(){ return TEMPLET::time(this); }
 	void stop(){ TEMPLET::stop(this); }
 
 	mes* out(){return &_out;}
@@ -115,6 +97,7 @@ struct sorter : actor{
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }
+	double time(){ return TEMPLET::time(this); }
 	void stop(){ TEMPLET::stop(this); }
 
 	void in(mes*m){m->_server_id=TAG_in; m->_srv=this;}
@@ -156,6 +139,7 @@ struct stoper : actor{
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }
+	double time(){ return TEMPLET::time(this); }
 	void stop(){ TEMPLET::stop(this); }
 
 	void in(mes*m){m->_server_id=TAG_in; m->_srv=this;}

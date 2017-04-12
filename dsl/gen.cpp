@@ -362,6 +362,7 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			"\t}\n\n"
 
 			"\tvoid delay(double);\n"
+			"\tdouble time();\n"
 			"\tvoid at(int);\n"
 			"\tvoid stop();\n";
 
@@ -663,6 +664,7 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		outf <<
 			"\tvoid at(int _at){ TEMPLET::at(this, _at); }\n"
 			"\tvoid delay(double t){ TEMPLET::delay(this, t); }\n"
+			"\tdouble time(){ return TEMPLET::time(this); }\n"
 			"\tvoid stop(){ TEMPLET::stop(this); }\n";
 
 		if (!a.ports.empty()) outf << endl;
