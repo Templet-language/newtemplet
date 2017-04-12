@@ -69,7 +69,7 @@ LTYPE linetype(string& line, string& key)
 
 int main(int argc, char* argv[])
 {
-	bool isRelease = false, helpme = false, place_bottom = false;
+	bool isRelease = false, helpme = false, place_bottom = false, find_markup = false;
 	string infile, outfile, skeleton;
 
 	for (int i = 1; i < argc; i++) {
@@ -102,7 +102,8 @@ int main(int argc, char* argv[])
 	if (helpme || argc==1){
 		cout << "Templet skeleton processor. Copyright Sergei Vostokin, 2016" << endl
 			<< "Usage:  skel <options>\n" << endl
-			<< " -s -S <skeleton file name>" << endl
+			<< " -s -S <skeleton file name> -- if not defined, the skel.exe tries to find out" << endl
+			<< "       the first markup block, when print it's key or NOBLOCKS to stdout" << endl
 			<< " -i -I <input file>" << endl
 			<< " -o -O <output file> -- assumed to be the same as an input file, if not defined" << endl
 			<< " -r -R -- use no markup in realease version of the output file" << endl
@@ -114,10 +115,12 @@ int main(int argc, char* argv[])
 	}
 
 	if (outfile.empty()){ outfile = infile; place_bottom = true; }
-	if (infile.empty() || skeleton.empty())	{
-		cout << "ERROR: bad param(s): input and skeleton files must be defined\n";
-		return 1;
+	if (infile.empty())	{
+		cout << "ERROR: bad param(s): input file must be defined\n";
+		return EXIT_FAILURE;
 	}
+
+	if (skeleton.empty()) find_markup = true;
 
 	map<string, Block> block_map;
 
@@ -129,7 +132,7 @@ int main(int argc, char* argv[])
 		string key;
 		Block block;
 
-		if (!file){ cout << "ERROR: could not open input file '" << infile << "'"; return 1; }
+		if (!file){ cout << "ERROR: could not open input file '" << infile << "'"; return EXIT_FAILURE; }
 		
 		string line;
 		getline(file, line); count++;
@@ -137,23 +140,27 @@ int main(int argc, char* argv[])
 		while (file){
 			switch (linetype(line, key)){
 			case FMARK:
+				if (find_markup) {
+					cout << key;
+					return 0;
+				}
 				if (read_block) { 
 					cout << "ERROR: " << fmark(key) << " inside a block in ihe input file '" << infile << "' at line #" << count;
-					return 1; 
+					return EXIT_FAILURE; 
 				}
 				read_block = true;
 				break;
 			case LMARK:
 				if (!read_block) {
 					cout << "ERROR: " << lmark() << " outside a block in ihe input file '" << infile << "' at line #" << count;
-					return 1;
+					return EXIT_FAILURE;
 				}
 				read_block = false;
 				{
 					map<string, Block>::const_iterator it = block_map.find(key);
 					if (it != block_map.end()){
 						cout << "ERROR: the key '"<<key<<"' is not unique: input file '" << infile << "' at line #" << count;
-						return 1;
+						return EXIT_FAILURE;
 					}
 				}
 				block_map[key] = block;
@@ -162,10 +169,15 @@ int main(int argc, char* argv[])
 			case TEXT:
 				if (read_block)block.push_back(line);
 				break;
-			case FAULTY: cout << "ERROR: a faulty block found in input file '"<< infile<<"' at line #"<<count; return 1;
+			case FAULTY: cout << "ERROR: a faulty block found in input file '"<< infile<<"' at line #"<<count; return EXIT_FAILURE;
 			}
 			getline(file, line); count++;
 		}
+	}
+
+	if (find_markup) {
+		cout << "NOBLOCKS";
+		return EXIT_SUCCESS; 
 	}
 
 	{
@@ -178,8 +190,8 @@ int main(int argc, char* argv[])
 		ifstream ifile(skeleton);
 		ofstream ofile(outfile);
 
-		if (!ifile){ cout << "ERROR: could not open skeleton file '" <<skeleton<< "for reading"; return 1; }
-		if (!ofile){ cout << "ERROR: could not open output file '" << outfile << "for writing"; return 1; }
+		if (!ifile){ cout << "ERROR: could not open skeleton file '" <<skeleton<< "for reading"; return EXIT_FAILURE; }
+		if (!ofile){ cout << "ERROR: could not open output file '" << outfile << "for writing"; return EXIT_FAILURE; }
 
 		string line;
 		getline(ifile, line); count++;
@@ -191,7 +203,7 @@ int main(int argc, char* argv[])
 			case FMARK:
 				if (read_block) {
 					cout << "ERROR: skeleton is corrupted! The mark " << fmark(key) << " is inside a block in ihe skeleton file '" << skeleton << "' at line #" << count;
-					return 1;
+					return EXIT_FAILURE;
 				}
 				read_block = true;
 				if(!isRelease) ofile << lead_sign_beg << key << lead_sign_end << endl;
@@ -210,7 +222,7 @@ int main(int argc, char* argv[])
 			case LMARK:
 				if (!read_block) {
 					cout << "ERROR: skeleton is corrupted! The mark " << lmark() << " is outside a block in ihe skeleton file '" << skeleton << "' at line #" << count;
-					return 1;
+					return EXIT_FAILURE;
 				}
 				read_block = false;
 				if (!isRelease) ofile << close_sign << endl;
@@ -218,7 +230,7 @@ int main(int argc, char* argv[])
 			case TEXT:
 				if (!read_block || (read_block && !have_substituted_block)) ofile << line << endl;
 				break;
-			case FAULTY: cout << "ERROR: skeleton is corrupted! A faulty block found in skeleton file '" << skeleton << "' at line #" << count; return 1;
+			case FAULTY: cout << "ERROR: skeleton is corrupted! A faulty block found in skeleton file '" << skeleton << "' at line #" << count; return EXIT_FAILURE;
 			}
 			getline(ifile, line); count++;
 		}
@@ -239,5 +251,5 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	return 0;
+	return EXIT_SUCCESS;
 }

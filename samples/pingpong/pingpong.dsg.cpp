@@ -30,6 +30,7 @@ struct ping : actor{
 	}
 
 	void delay(double);
+	double time();
 	void at(int);
 	void stop();
 
@@ -60,6 +61,7 @@ struct pong : actor{
 	}
 
 	void delay(double);
+	double time();
 	void at(int);
 	void stop();
 

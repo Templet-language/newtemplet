@@ -55,6 +55,7 @@ struct ping : actor{
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }
+	double time(){ return TEMPLET::time(this); }
 	void stop(){ TEMPLET::stop(this); }
 
 	mes* p(){return &_p;}
@@ -96,6 +97,7 @@ struct pong : actor{
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }
+	double time(){ return TEMPLET::time(this); }
 	void stop(){ TEMPLET::stop(this); }
 
 	void p(mes*m){m->_server_id=TAG_p; m->_srv=this;}
