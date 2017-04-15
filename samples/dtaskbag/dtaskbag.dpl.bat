@@ -1,0 +1,1 @@
+"../../bin/skel" -i dtaskbag.cpp -s dtaskbag.dpl.cpp

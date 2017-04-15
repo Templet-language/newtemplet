@@ -1,4 +1,4 @@
-/*$TET$header*/
+/*$TET$actor*/
 /*--------------------------------------------------------------------------*/
 /*  Copyright 2016 Sergei Vostokin                                          */
 /*                                                                          */
@@ -60,6 +60,7 @@ struct master : actor{
 	}
 
 	void delay(double);
+	double time();
 	void at(int);
 	void stop();
 
@@ -122,6 +123,7 @@ struct worker : actor{
 	}
 
 	void delay(double);
+	double time();
 	void at(int);
 	void stop();
 

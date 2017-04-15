@@ -1,4 +1,4 @@
-/*$TET$header*/
+/*$TET$pipeline*/
 /*$TET$*/
 
 #include <omp.h>

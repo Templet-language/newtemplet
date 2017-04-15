@@ -1,4 +1,4 @@
-/*$TET$header*/
+/*$TET$actor*/
 #include <templet.hpp>
 /*$TET$*/
 
@@ -83,6 +83,7 @@ struct master : actor{
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }
+	double time(){ return TEMPLET::time(this); }
 	void stop(){ TEMPLET::stop(this); }
 
 	value_message* sin2_port(){return &_sin2_port;}
@@ -144,6 +145,7 @@ struct worker : actor{
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }
+	double time(){ return TEMPLET::time(this); }
 	void stop(){ TEMPLET::stop(this); }
 
 	void master_port(value_message*m){m->_server_id=TAG_master_port; m->_srv=this;}

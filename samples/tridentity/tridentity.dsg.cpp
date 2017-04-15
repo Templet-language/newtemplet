@@ -1,4 +1,4 @@
-/*$TET$header*/
+/*$TET$actor*/
 #include <templet.hpp>
 /*$TET$*/
 
@@ -42,6 +42,7 @@ struct master : actor{
 	}
 
 	void delay(double);
+	double time();
 	void at(int);
 	void stop();
 
@@ -91,6 +92,7 @@ struct worker : actor{
 	}
 
 	void delay(double);
+	double time();
 	void at(int);
 	void stop();
 

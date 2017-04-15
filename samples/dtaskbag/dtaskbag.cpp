@@ -1,4 +1,4 @@
-/*$TET$taskbag*/
+/*$TET$dtaskbag*/
 /*--------------------------------------------------------------------------*/
 /*  Copyright 2016 Sergei Vostokin                                          */
 /*                                                                          */
@@ -15,8 +15,9 @@
 /*  limitations under the License.                                          */
 /*--------------------------------------------------------------------------*/
 #include <iostream>
-#include <omp.h>
+#include <chrono>
 
+#define DEBUG_SERIALIZATION
 #include <templet.hpp>
 
 // параллельное умножение матриц
@@ -32,12 +33,36 @@ using namespace std;
 using namespace TEMPLET;
 
 struct task{
+	void save(saver*s){
+/*$TET$task$save*/
+		::save(s, &num, sizeof(num)); // строка num
+		::save(s, &A[num][0], sizeof(double)*N); // матрицы A
+/*$TET$*/
+	}
+	void restore(restorer*r){
+/*$TET$task$restore*/
+		::restore(r, &num, sizeof(num)); // строка num
+		::restore(r, &A[num][0], sizeof(double)*N); // матрицы A
+/*$TET$*/
+	}
 /*$TET$task$data*/
 	int num;// номер вычисляемой строки матрицы C
 /*$TET$*/
 };
 
 struct result{
+	void save(saver*s){
+/*$TET$result$save*/
+		::save(s, &num, sizeof(num)); // строка num 
+		::save(s, &C[num][0], sizeof(double)*N); // матрицы C
+/*$TET$*/
+	}
+	void restore(restorer*r){
+/*$TET$result$restore*/
+		::restore(r, &num, sizeof(num)); // строка num 
+		::restore(r, &C[num][0], sizeof(double)*N); // матрицы C
+/*$TET$*/
+	}
 /*$TET$result$data*/
 	int num; // номер вычисленной строки матрицы C
 /*$TET$*/
@@ -60,6 +85,16 @@ struct bag{
 	void put(result*r){
 /*$TET$bag$put*/
 // в этом примере не требует определения
+/*$TET$*/
+	}
+	void save(saver*s){
+/*$TET$bag$save*/
+		::save(s, &B[0][0], sizeof(double)*N*N); // матрица B
+/*$TET$*/
+	}
+	void restore(restorer*r){
+/*$TET$bag$restore*/
+		::restore(r, &B[0][0], sizeof(double)*N*N); // матрица B 
 /*$TET$*/
 	}
 /*$TET$bag$data*/
@@ -96,12 +131,13 @@ int main(int argc, char* argv[])
 	}
 
 	// параллельное умножение матриц c замером времени
-	double start = omp_get_wtime();
+	auto start = std::chrono::high_resolution_clock::now();
 	b.run();
-	double end = omp_get_wtime();
+	auto end = std::chrono::high_resolution_clock::now();
 
 	std::cout << "multiplication time is "
-		<< (end - start) << " seconds\n";
+		<< (double)std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() / 1000000
+		<< " seconds\n";
 
 	// проверяем результат
 	for (int i = 0; i < N; i++){

@@ -1,4 +1,4 @@
-/*$TET$taskbag*/
+/*$TET$dtaskbag*/
 #include <templet.hpp>
 /*$TET$*/
 #include <queue>
@@ -13,16 +13,44 @@ using namespace TEMPLET;
 struct task_result : message{
 
 	task_result(engine*e,actor*m,actor*w): _master(m), _worker(w) {
-		::init(this, w, e);
+		::init(this, w, e, save_adapter, restore_adapter);
 		_call = FIRST_CALL;
 	}
 
+	void save(saver*s){
+		::save(s, &_call, sizeof(_call));
+		if(_call == NEXT_CALL) _result.save(s);
+		else if(_call == REPLY) _task.save(s);
+	}
+
+	void restore(restorer*r){
+		::restore(r,&_call,sizeof(_call));
+		if(_call == NEXT_CALL) _result.restore(r);
+		else if(_call == REPLY) _task.restore(r);
+	}
+
 	struct task{
+		void save(saver*s){
+/*$TET$task$save*/
+/*$TET$*/
+		}
+		void restore(restorer*r){
+/*$TET$task$restore*/
+/*$TET$*/
+		}
 /*$TET$task$data*/
 /*$TET$*/
 	} _task;
 
 	struct result{
+		void save(saver*s){
+/*$TET$result$save*/
+/*$TET$*/
+		}
+		void restore(restorer*r){
+/*$TET$result$restore*/
+/*$TET$*/
+		}
 /*$TET$result$data*/
 /*$TET$*/
 	} _result;
@@ -33,6 +61,9 @@ struct task_result : message{
 	enum { FIRST_CALL, NEXT_CALL, REPLY } _call;
 	actor* _master;
 	actor* _worker;
+
+	friend void save_adapter(message*m, saver*s){((task_result*)m)->save(s);}
+	friend void restore_adapter(message*m, restorer*r){((task_result*)m)->restore(r);}
 };
 
 struct worker;
@@ -87,6 +118,16 @@ struct bag : actor{
 /*$TET$*/	
 	}
 	
+	void save(saver*s){
+/*$TET$bag$save*/
+/*$TET$*/
+	}
+	
+	void restore(restorer*r){
+/*$TET$bag$restore*/
+/*$TET$*/
+	}
+	
 /*$TET$bag$data*/
 /*$TET$*/
 
@@ -99,7 +140,7 @@ struct bag : actor{
 struct worker : actor{
 public:
 	worker(engine*e,bag*b):_bag(b){
-		::init(this, e, recv_worker);
+		::init(this, e, recv_worker, save_adapter, restore_adapter);
 		_init = true;
 	}
 	void delay(double t){ TEMPLET::delay(this,t); }
@@ -117,6 +158,11 @@ public:
 		w->proc(&tr->_task,&tr->_result);
 		tr->call();
 	}
+
+	void save(saver*s){if(_init)_bag->save(s); _init=false;}
+	void restore(restorer*r){if(_init)_bag->restore(r); _init=false;}
+	friend void save_adapter(actor*a, saver*s){((worker*)a)->save(s);}
+	friend void restore_adapter(actor*a, restorer*r){((worker*)a)->restore(r);}
 
 	bag* _bag;
 	bool _init;

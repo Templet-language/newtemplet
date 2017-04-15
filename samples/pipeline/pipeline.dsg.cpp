@@ -1,4 +1,4 @@
-/*$TET$header*/
+/*$TET$pipeline*/
 // TODO: place additional headers and other stuff here
 /*$TET$*/
 

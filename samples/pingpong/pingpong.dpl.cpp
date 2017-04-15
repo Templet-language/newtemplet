@@ -1,4 +1,4 @@
-/*$TET$header*/
+/*$TET$actor*/
 #include <templet.hpp>
 /*$TET$*/
 

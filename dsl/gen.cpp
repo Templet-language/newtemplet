@@ -273,7 +273,7 @@ void print_actor(ostream&s,actor&a)
 
 void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 {
-	outf << "/*$TET$header*/\n"
+	outf << "/*$TET$actor*/\n"
 		"#include <templet.hpp>\n"
 		"/*$TET$*/\n";
 
@@ -437,7 +437,7 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 
 void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 {
-	outf << "/*$TET$header*/\n"
+	outf << "/*$TET$actor*/\n"
 		"#include <templet.hpp>\n"
 		"/*$TET$*/\n";
 
