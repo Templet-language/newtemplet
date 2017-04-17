@@ -21,12 +21,12 @@ struct pipeline{
 			for (int t = 1; t <= (2 * T - 1) + (H - 3); t++){
 
 				if (t % 2 == 1){
-					#pragma omp for schedule(dynamic)
+					#pragma omp for schedule(guided)
 					for (int i = 1; i < H - 1; i += 2)
 						if (i <= t && i > t - 2 * T)	stage(i);
 				}
 				if (t % 2 == 0){
-					#pragma omp for schedule(dynamic)
+					#pragma omp for schedule(guided)
 					for (int i = 2; i < H - 1; i += 2)
 						if (i <= t && i > t - 2 * T)	stage(i);
 				}

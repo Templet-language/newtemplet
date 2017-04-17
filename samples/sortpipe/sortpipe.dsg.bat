@@ -1,0 +1,1 @@
+"../../bin/skel" -i sortpipe.cpp -s ../pipeline/pipeline.dsg.cpp
