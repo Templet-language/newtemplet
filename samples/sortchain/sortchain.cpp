@@ -103,18 +103,20 @@ struct sorter : actor{
 	void in(mes&m){
 /*$TET$sorter$in*/
 		_in=&m;
-		if(_out.access(this))proc();
+		sort();
 /*$TET$*/
 	}
 
 	void out(mes&m){
 /*$TET$sorter$out*/
-		if(_in->access(this))proc();
+		sort();
 /*$TET$*/
 	}
 
 /*$TET$sorter$$code&data*/
-	void proc(){
+	void sort(){
+		if (!(_in->access(this) && _out.access(this)))return;
+
 		if(is_first){
 			number=_in->number;
 			is_first=false;
