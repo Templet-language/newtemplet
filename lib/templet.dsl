@@ -14,55 +14,47 @@
 /*  limitations under the License.                                          */
 /*--------------------------------------------------------------------------*/
 
-// one more way to implement DSL in C++ instead of DSL in #pragma templet ...
-
-#pragma once
-
-namespace TEMPLET{ 
-namespace dsl{ // domain-specific language interface
-
-		class message{
-		public:
-			message(std::string name);
-			message();
-			~message();
-		public:
-			message& name(std::string name);
-			message& duplex();
-			message& serializable();
-			message& in(std::string name, bool content = true);
-			message& out(std::string name, bool content = true);
-		};
-
-		class actor{
-		public:
-			actor(std::string name);
-			actor();
-			~actor();
-		public:
-			actor& name(std::string name);
-			actor& serializable();
-			actor& startable();
-			actor& in(std::string port_name, std::string message_name);
-			actor& out(std::string port_name, std::string message_name);
-			actor& any();
-		};
-}
-}
-///    DSL block for the tridentity sample 
-void dsl()
+void def()
 {
-/*$TET$dsl*/
-#pragma templet ~value_message$=
-	TEMPLET::dsl::message m("value_message"); m.serializable().duplex();
+	message m1("m1"), m2("m2");
+	m1.duplex().serializable();
 
-#pragma templet *master$(sin2_port!value_message,cos2_port!value_message)+	
-	TEMPLET::dsl::actor mst("master"); mst.serializable().startable().
-		out("sin2_port", "value_message").out("cos2_port", "value_message");
-		
-#pragma templet *worker(master_port?value_message)
-	TEMPLET::dsl::actor wkr("worker");
-		wkr.in("master_port", "value_message");
-/*$TET$*/
+	actor a("a");
+	a.serializable().startable();
+	a.out("out_port","m1").in("in_port","m2");
 }
 
+#pragma templet ~m1$=
+struct m1:message{
+	void send();
+	void send_back();
+	//
+	void save(saver*s){/*--*/}
+	void restore(restorer*r){/*--*/}
+	/*--*/
+};
+
+#pragma templet ~m2
+struct m2:message{
+	void send();
+	/*--*/
+};
+
+#pragma templet *a$(out_port!m1,in_port?m2)+
+struct a:actor{
+	a(engine&);
+	access(message&);
+	//
+	void save(saver*s){/*--*/}
+	void restore(restorer*r){/*--*/}
+	//
+	void start(){/*--*/}
+	void out_port(m1& m){/*--*/}
+	void in_port(m2& m){/*--*/}
+	//
+	m1* out_port();
+	void in_port(m2*);
+	//
+	m1 _out_port;
+	/*--*/
+};
