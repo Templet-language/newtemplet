@@ -125,7 +125,7 @@ int main(int argc, char* argv[])
 	map<string, Block> block_map;
 
 	{
-		ifstream file(infile);
+		ifstream file(infile.c_str());
 
 		int count = 0;
 		bool read_block = false;
@@ -187,8 +187,8 @@ int main(int argc, char* argv[])
 		bool have_substituted_block=false;
 
 		int count = 0;
-		ifstream ifile(skeleton);
-		ofstream ofile(outfile);
+		ifstream ifile(skeleton.c_str());
+		ofstream ofile(outfile.c_str());
 
 		if (!ifile){ cout << "ERROR: could not open skeleton file '" <<skeleton<< "for reading"; return EXIT_FAILURE; }
 		if (!ofile){ cout << "ERROR: could not open output file '" << outfile << "for writing"; return EXIT_FAILURE; }
