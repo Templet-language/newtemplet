@@ -19,6 +19,8 @@
 #include <map>
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
+
 using namespace std;
 
 enum LTYPE{ FMARK, LMARK, TEXT, FAULTY };
