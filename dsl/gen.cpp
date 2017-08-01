@@ -25,9 +25,7 @@ using namespace std;
 
 /*
 Syntax:
-#pragma templet '~' id ['$'] [ '(' ['-'] id ('!'|'?') {',' ['-'] id ('!'|'?')} ')' ] ['=']
-
-Altsyntax:
+// #pragma templet '~' id ['$'] [ '(' ['-'] id ('!'|'?') {',' ['-'] id ('!'|'?')} ')' ] ['=']
 #pragma templet '~' id ['$'] ['=']
 
 Samples:
@@ -807,7 +805,8 @@ int main(int argc, char *argv[])
 		cout << "Templet skeleton generator. Copyright Sergei Vostokin, 2016" << endl << endl
 			<< "Usage: gen (-deploy|-design) <input file with the templet markup> <skeleton output file>" << endl << endl
 			<< "The Templet markup syntax:" << endl << endl
-			<< "#pragma templet '~' id ['$'] \n\t [ '(' ['-'] id ('!'|'?') {',' ['-'] id ('!'|'?')} ')' ] ['=']" << endl
+//			<< "#pragma templet '~' id ['$'] \n\t [ '(' ['-'] id ('!'|'?') {',' ['-'] id ('!'|'?')} ')' ] ['=']" << endl
+			<< "#pragma templet '~' id ['$'] ['=']" << endl
 			<< "#pragma templet '*' id ['$'] \n\t [ '(' ('?'| id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']";
 		return EXIT_FAILURE;
 	}

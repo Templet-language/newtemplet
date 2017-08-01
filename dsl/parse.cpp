@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <regex>
+//#include <regex>
 using namespace std;
 
 ifstream file;
@@ -14,7 +14,7 @@ bool openparse(string&name, string&pragma)
 	if (file.is_open())
 		closeparse();
 
-	file = ifstream(name);
+	file.open(name.c_str());
 
 	if (!file.is_open()) return false;
 	
@@ -32,7 +32,35 @@ bool getpragma(string&argstring, int&line)
 	while (file.getline(buf, sizeof(buf)))
 	{
 		_line++;
-		string str = buf;
+		string str(buf);
+		size_t pos = 0, last_pos;
+
+		pos = str.find_first_not_of("\t ", pos);
+		if (pos == string::npos) continue;
+
+		if(str.find("#", pos) != pos) continue;
+		
+		pos = str.find_first_not_of("\t ", pos+1);
+		if (pos == string::npos) continue;
+
+		if (str.find("pragma", pos) != pos) continue;
+		pos += strlen("pragma"); last_pos = pos;
+		
+		pos = str.find_first_not_of("\t ", pos);
+		if (pos == string::npos || pos == last_pos) continue;
+		
+		if (str.find(_pragma.c_str(), pos) != pos) continue;
+		pos += strlen(_pragma.c_str()); last_pos = pos;
+
+		pos = str.find_first_not_of("\t ", pos);
+		if (pos == string::npos || pos == last_pos) continue;
+
+		argstring = str.substr(pos);
+		line = _line;
+
+		return true;
+
+		/*
 		regex rx("[ |\t]*#[ |\t]*pragma[ |\t]+" + _pragma + "[ |\t]+.*");
 		if (regex_match(str, rx)) 
 		{
@@ -52,6 +80,7 @@ bool getpragma(string&argstring, int&line)
 			}
 			return true;
 		}
+		*/
 	}
 	return false;
 }
