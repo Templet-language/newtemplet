@@ -1,26 +1,25 @@
 #include <string>
-using namespace std;
 
-static string str;
-static string lastlexem;
+static std::string str;
+static std::string lastlexem;
 static bool is_unget;
-static int index;
+static int str_index;
 static int len;
 
-enum State {S,A,B,C,D,P,F,E};
+enum  State {_S_,_A_,_B_,_C_,_D_,_P_,_F_,_E_};
 
 State Sta;
 
-void lexinit(string&s)
+void lexinit(std::string&s)
 {
 	str = s;
-	index = 0;
+	str_index = 0;
 	is_unget = false;
 	lastlexem.clear();
 	len = str.length();
 }
 
-bool getlex(string&lex)
+bool getlex(std::string&lex)
 {
 	if (is_unget){
 		lex = lastlexem;
@@ -28,108 +27,108 @@ bool getlex(string&lex)
 		return true;
 	}
 	
-	string lexem = "";
-	Sta = State::S;
+	std::string lexem = "";
+	Sta = _S_;
 	char symb;
-	while ((Sta != State::F) && (index < len))
+	while ((Sta !=_F_) && (str_index < len))
 	{
-		symb = str[index];
+		symb = str[str_index];
 		switch (Sta)
 		{
-		case S:
+		case _S_:
 			if (symb == ' ')
 			{
-				Sta = State::S;
-				index++;
+				Sta = _S_;
+				str_index++;
 			}
 			else
 			{
 				if (symb == '\\')
 				{
-					Sta = State::A;
-					index++;
+					Sta = _A_;
+					str_index++;
 				}
 				else
 				{
 					if (symb == '_')
 					{
 						lexem += symb;
-						Sta = State::D;
-						index++;
+						Sta = _D_;
+						str_index++;
 					}
 					else
 					{
 						if (((symb >= 'a') && (symb <= 'z')) || ((symb >= 'A') && (symb <= 'Z')))
 						{
 							lexem += symb;
-							Sta = State::C;
-							index++;
+							Sta = _C_;
+							str_index++;
 						}
 						else
 						{
 							lexem = symb;
-							index++;
-							Sta = State::F;
+							str_index++;
+							Sta = _F_;
 						}
 					}
 				}
 			}
 			break;
-		case A:
+		case _A_:
 			if ((symb == '\r') || (symb == '\t') || (symb == '_'))
 			{
-				Sta = State::A;
-				index++;
+				Sta = _A_;
+				str_index++;
 			}
 			else
 				if (symb == '\n')
 				{
-					Sta = State::S;
-					index++;
+					Sta = _S_;
+					str_index++;
 				}
 				else
 				{
 					lexem = '\\';
-					Sta = State::F;
+					Sta = _F_;
 				}
 			break;
-		case D:
+		case _D_:
 			if (symb == '_') 
 			{
 				lexem += symb;
-				Sta = State::D;
-				index++;
+				Sta = _D_;
+				str_index++;
 			}
 			else 
 			{
 				if (((symb >= 'a') && (symb <= 'z')) || ((symb >= 'A') && (symb <= 'Z')))
 				{
 					lexem += symb;
-					Sta = State::C;
-					index++;
+					Sta = _C_;
+					str_index++;
 				}
 				else
 				{
-					Sta = State::F;
+					Sta = _F_;
 				}
 			}
 			break;
-		case C:
-			if (len == index)/////////////
+		case _C_:
+			if (len == str_index)
 			{
-				Sta = State::F;
+				Sta = _F_;
 			}
 			else
 			{
 					if (((symb >= 'a') && (symb <= 'z')) || ((symb >= 'A') && (symb <= 'Z')) || ((symb >= '0') && (symb <= '9')) || (symb=='_'))
 					{
-						Sta = State::C;
+						Sta = _C_;
 						lexem += symb;
-						index++;
+						str_index++;
 					}
 					else
 					{
-						Sta = State::F;
+						Sta = _F_;
 					}
 				
 			}

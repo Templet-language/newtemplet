@@ -1,4 +1,4 @@
-﻿/*--------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------*/
 /*  Copyright 2016 Sergei Vostokin                                          */
 /*                                                                          */
 /*  Licensed under the Apache License, Version 2.0 (the "License");         */
@@ -397,7 +397,8 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		}
 
 		if (a.response_any){
-			for (auto &m : mlist){
+			for (std::list<message>::iterator it=mlist.begin();it!=mlist.end();it++){
+				message& m = *it;
 				if (/*m.subm.empty() &&*/ !m.duplex){
 					outf << endl;
 					outf << "\tvoid recv_" << m.name << "(" << m.name << "&m){\n"
@@ -632,7 +633,8 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			bool first = true;
 
 			outf << "\tenum tag{";
-			for (auto& x : a.ports){
+			for (std::list<port>::iterator it1=a.ports.begin();it1!=a.ports.end();it1++){
+				port& x = *it1;
 				if (a.response_any || a.initially_active){
 					if (first){ outf << "TAG_" << x.name << "=START+" << ++tag_num; first = false; }
 					else outf << ",TAG_" << x.name << "=START+" << ++tag_num;
@@ -658,11 +660,13 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		else{
 			outf << "\t" << a.name << "(my_engine&e):";
 			bool first = true;
-			for(auto& x : a.ports)
+			for(std::list<port>::iterator it1=a.ports.begin();it1!=a.ports.end();it1++){
+				port& x = *it1;
 				if (x.type == port::CLIENT){
 					if (first)first = false; else outf << ",";
 					outf << "_" << x.name << "(this, &e, TAG_" << x.name << ")";
 				};
+			}
 			outf << "{\n";
 		}
 
@@ -820,7 +824,9 @@ int main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	if (!openparse(string(argv[2]), string("templet"))){
+	
+	string argv2(argv[2]), tt("templet");
+	if (!openparse(argv2,tt)){
 		cout << "ERROR: could not open file '" << argv[2] << "' for reading" << endl;
 		return EXIT_FAILURE;
 	}
