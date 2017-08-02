@@ -12,17 +12,11 @@ struct my_engine : engine{
 	void map(){ TEMPLET::map(this); }
 };
 
-enum MESSAGE_TAGS{ START };
-
 #pragma templet ~mes=
 
 struct mes : message{
 	mes(actor*a, engine*e, int t) : _where(CLI), _cli(a), _client_id(t){
 		::init(this, a, e);
-	}
-
-	bool access(actor*a){
-		return TEMPLET::access(this, a);
 	}
 
 	void send(){
@@ -43,7 +37,7 @@ struct mes : message{
 #pragma templet *ping(p!mes)+
 
 struct ping : actor{
-	enum tag{TAG_p=START+1};
+	enum tag{START,TAG_p};
 
 	ping(my_engine&e):_p(this, &e, TAG_p){
 		::init(this, &e, ping_recv_adapter);
@@ -52,6 +46,8 @@ struct ping : actor{
 /*$TET$ping$ping*/
 /*$TET$*/
 	}
+
+	bool access(message*m){ TEMPLET::access(m, this); }
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }
@@ -87,13 +83,15 @@ struct ping : actor{
 #pragma templet *pong(p?mes)
 
 struct pong : actor{
-	enum tag{TAG_p};
+	enum tag{START,TAG_p};
 
 	pong(my_engine&e){
 		::init(this, &e, pong_recv_adapter);
 /*$TET$pong$pong*/
 /*$TET$*/
 	}
+
+	bool access(message*m){ TEMPLET::access(m, this); }
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }

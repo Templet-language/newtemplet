@@ -27,7 +27,6 @@ void def()
 #pragma templet ~m1$=
 struct m1:message{
 	void send();
-	void send_back();
 	//
 	void save(saver*s){/*--*/}
 	void restore(restorer*r){/*--*/}

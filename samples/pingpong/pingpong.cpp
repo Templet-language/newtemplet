@@ -34,7 +34,6 @@ public:
 #pragma templet ~mes=
 
 struct mes : message{
-	bool access(actor*);
 	void send();
 
 /*$TET$mes$$data*/
@@ -49,6 +48,8 @@ struct ping : actor{
 /*$TET$ping$ping*/
 /*$TET$*/
 	}
+
+	bool access(message*);
 
 	void delay(double);
 	double time();
@@ -84,6 +85,8 @@ struct pong : actor{
 /*$TET$pong$pong*/
 /*$TET$*/
 	}
+
+	bool access(message*);
 
 	void delay(double);
 	double time();

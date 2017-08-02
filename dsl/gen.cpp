@@ -34,7 +34,8 @@ Samples:
 #pragma templet ~message$(submessage1?,submessage2!,submessage3!,-submessage4?)
 
 Syntax:
-#pragma templet '*' id ['$'] [ '(' ('?'| id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']
+//#pragma templet '*' id ['$'] [ '(' ('?'| id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']
+#pragma templet '*' id ['$'] [ '(' id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']
 
 Samples:
 #pragma templet *actor
@@ -65,7 +66,7 @@ struct actor{
   string name;
   bool serilizable;
   bool initially_active;
-  bool response_any;
+ // bool response_any;
   list<port> ports;
 };
 
@@ -167,13 +168,13 @@ bool parse_actor(int line, actor& a)
 
 		port p;
 
-		a.response_any = false;
+//		a.response_any = false;
 
-		if (getlex(lex) && lex == "?"){
-			a.response_any = true;
-		}
-		else{
-			ungetlex();
+//		if (getlex(lex) && lex == "?"){
+//			a.response_any = true;
+//		}
+//		else{
+//			ungetlex();
 
 			if (!(getlex(lex) && is_id(lex))) error(line);
 
@@ -188,7 +189,7 @@ bool parse_actor(int line, actor& a)
 			p.message_name = lex;
 
 			a.ports.push_back(p);
-		}
+//		}
 
 		while (getlex(lex) && lex == ","){
 
@@ -255,7 +256,7 @@ void print_actor(ostream&s,actor&a)
 	if (a.ports.size()){
 		s << "(";
 
-		if (a.response_any){ s << "?"; comma = true; }
+		//if (a.response_any){ s << "?"; comma = true; }
 
 		for(std::list<port>::iterator it = a.ports.begin(); it!= a.ports.end();it++){
 			port& x = *it;
@@ -326,14 +327,14 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 	//		outf << "\tvoid send(tag);\n";
 	//	}
 	//	else{
-			if (m.duplex){
-				outf << "\tbool access(actor*);\n";
+	//		if (m.duplex){
+	//			outf << "\tbool access(actor*);\n";
 				outf << "\tvoid send();\n";
-			}
-			else{
-				outf << "\tbool access(actor*);\n";
-				outf << "\tvoid send(actor*);\n";
-			}
+	//		}
+	//		else{
+	//			outf << "\tbool access(actor*);\n";
+	//			outf << "\tvoid send(actor*);\n";
+	//		}
 	//	}  
 
 		if (m.serilizable){
@@ -370,6 +371,8 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			"/*$TET$*/\n"
 			"\t}\n\n"
 
+			"\tbool access(message*);\n\n"
+
 			"\tvoid delay(double);\n"
 			"\tdouble time();\n"
 			"\tvoid at(int);\n"
@@ -394,18 +397,18 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 				"\t}\n";
 		}
 
-		if (a.response_any){
-			for (std::list<message>::iterator it=mlist.begin();it!=mlist.end();it++){
-				message& m = *it;
-				if (/*m.subm.empty() &&*/ !m.duplex){
-					outf << endl;
-					outf << "\tvoid recv_" << m.name << "(" << m.name << "&m){\n"
-						"/*$TET$" << a.name << "$recv_" << m.name << "*/\n"
-						"/*$TET$*/\n"
-						"\t}\n";
-				}
-			}
-		}
+//		if (a.response_any){
+//			for (std::list<message>::iterator it=mlist.begin();it!=mlist.end();it++){
+//				message& m = *it;
+//				if (/*m.subm.empty() &&*/ !m.duplex){
+//					outf << endl;
+//					outf << "\tvoid recv_" << m.name << "(" << m.name << "&m){\n"
+//						"/*$TET$" << a.name << "$recv_" << m.name << "*/\n"
+//						"/*$TET$*/\n"
+//						"\t}\n";
+//				}
+//			}
+//		}
 
 		for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
 			port& p = *it;
@@ -472,27 +475,27 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 
 	outf << endl;
 	
-	outf << "enum MESSAGE_TAGS{ ";
+//	outf << "enum MESSAGE_TAGS{ ";
 	
-	bool first = true;
-	int  mes_tags = false;
+//	bool first = true;
+//	int  mes_tags = false;
 
-	for (std::list<message>::iterator it = mlist.begin(); it != mlist.end(); it++) {
-		message& m = *it;
+//	for (std::list<message>::iterator it = mlist.begin(); it != mlist.end(); it++) {
+//		message& m = *it;
 //	for (auto& m:mlist){
-		if(!m.duplex){
-			if (first) first = false; else outf << ", ";
-			outf << "MES_" << m.name;
-			mes_tags=true;
-		}
-	}
+//		if(!m.duplex){
+//			if (first) first = false; else outf << ", ";
+//			outf << "MES_" << m.name;
+//			mes_tags=true;
+//		}
+//	}
 	
-	if (!mes_tags) outf << "START";
-	else outf << ", START";
+//	if (!mes_tags) outf << "START";
+//	else outf << ", START";
 
-	outf << " };\n";
+//	outf << " };\n";
 
-	outf << endl;
+//	outf << endl;
 
 	for (std::list<message>::iterator it = mlist.begin(); it != mlist.end(); it++) {
 		message& m = *it;
@@ -564,9 +567,9 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			if (m.duplex){
 			
 				outf <<
-				"\tbool access(actor*a){\n"
-					"\t\treturn TEMPLET::access(this, a);\n"
-					"\t}\n\n"
+//				"\tbool access(actor*a){\n"
+//					"\t\treturn TEMPLET::access(this, a);\n"
+//					"\t}\n\n"
 
 					"\tvoid send(){\n"
 					"\t\tif (_where == CLI){ TEMPLET::send(this, _srv, _server_id); _where = SRV; }\n"
@@ -576,12 +579,12 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			}
 			else{
 				outf <<
-					"\tbool access(actor*a){\n"
-					"\t\treturn TEMPLET::access(this, a);\n"
-					"\t}\n\n"
+//					"\tbool access(actor*a){\n"
+//					"\t\treturn TEMPLET::access(this, a);\n"
+//					"\t}\n\n"
 
-					"\tvoid send(actor*a){\n"
-					"\t\tTEMPLET::send(this, a, MES_"<< m.name <<");\n"
+					"\tvoid send(){\n"
+					"\t\tTEMPLET::send(this, _srv, _server_id);\n"
 					"\t}\n";
 			}
 	//	}
@@ -616,6 +619,12 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 				"\tint _server_id;\n";
 //			if (!m.subm.empty()) outf << "\tint _tag;\n";
 		}
+		else {
+			outf << endl;
+			outf <<
+				"\tactor* _srv;\n"
+				"\tint _server_id;\n";
+		}
 		
 		outf << "};\n\n";
 	}
@@ -628,19 +637,20 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 
 		if (!a.ports.empty()){
 			int tag_num = 0;
-			bool first = true;
+//			bool first = true;
 
-			outf << "\tenum tag{";
+			outf << "\tenum tag{START";
 			for (std::list<port>::iterator it1=a.ports.begin();it1!=a.ports.end();it1++){
 				port& x = *it1;
-				if (a.response_any || a.initially_active){
-					if (first){ outf << "TAG_" << x.name << "=START+" << ++tag_num; first = false; }
-					else outf << ",TAG_" << x.name << "=START+" << ++tag_num;
-				}
-				else{
-					if (first){ outf << "TAG_" << x.name; first = false; }
-					else outf << ",TAG_" << x.name;
-				}
+//				if (a.response_any || a.initially_active){
+//					if (first){ outf << "TAG_" << x.name << "=START+" << ++tag_num; first = false; }
+//					else outf << ",TAG_" << x.name << "=START+" << ++tag_num;
+//				}
+//				else{
+//					if (first){ outf << "TAG_" << x.name; first = false; }
+//					else 
+						outf << ",TAG_" << x.name;
+//				}
 			}
 			outf << "};\n\n";
 		}
@@ -693,6 +703,7 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		}
 
 		outf <<
+			"\tbool access(message*m){ TEMPLET::access(m, this); }\n\n"
 			"\tvoid at(int _at){ TEMPLET::at(this, _at); }\n"
 			"\tvoid delay(double t){ TEMPLET::delay(this, t); }\n"
 			"\tdouble time(){ return TEMPLET::time(this); }\n"
@@ -714,11 +725,11 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		outf <<	"\tstatic void "<<a.name<<"_recv_adapter (actor*a, message*m, int tag){\n";
 		outf << "\t\tswitch(tag){\n";
 
-		for (std::list<message>::iterator it = mlist.begin(); it != mlist.end(); it++) {
-			message& m = *it;
+//		for (std::list<message>::iterator it = mlist.begin(); it != mlist.end(); it++) {
+//			message& m = *it;
 			//for (auto& m : mlist)
-			if (!m.duplex && a.response_any)	outf << "\t\t\tcase MES_" << m.name << ": ((" << a.name << "*)a)->recv_" << m.name << "(*((" << m.name << "*)m)); break;\n";
-		}
+//			if (!m.duplex && a.response_any)	outf << "\t\t\tcase MES_" << m.name << ": ((" << a.name << "*)a)->recv_" << m.name << "(*((" << m.name << "*)m)); break;\n";
+//		}
 		for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
 			port& p = *it;
 			//for (auto& p : a.ports)
@@ -738,19 +749,19 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 				"\t}\n";
 		}
 
-		if (a.response_any){
-			for (std::list<message>::iterator it = mlist.begin(); it != mlist.end(); it++) {
-				message& m = *it;
+//		if (a.response_any){
+//			for (std::list<message>::iterator it = mlist.begin(); it != mlist.end(); it++) {
+//				message& m = *it;
 //			for (auto &m : mlist){
-				if (/*m.subm.empty() &&*/ !m.duplex){
-					outf << endl;
-					outf << "\tvoid recv_" << m.name << "(" << m.name << "&m){\n"
-						"/*$TET$" << a.name << "$recv_" << m.name << "*/\n"
-						"/*$TET$*/\n"
-						"\t}\n";
-				}
-			}
-		}
+//				if (/*m.subm.empty() &&*/ !m.duplex){
+//					outf << endl;
+//					outf << "\tvoid recv_" << m.name << "(" << m.name << "&m){\n"
+//						"/*$TET$" << a.name << "$recv_" << m.name << "*/\n"
+//						"/*$TET$*/\n"
+//						"\t}\n";
+//				}
+//			}
+//		}
 
 		for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
 			port& p = *it;
@@ -807,7 +818,9 @@ int main(int argc, char *argv[])
 			<< "The Templet markup syntax:" << endl << endl
 //			<< "#pragma templet '~' id ['$'] \n\t [ '(' ['-'] id ('!'|'?') {',' ['-'] id ('!'|'?')} ')' ] ['=']" << endl
 			<< "#pragma templet '~' id ['$'] ['=']" << endl
-			<< "#pragma templet '*' id ['$'] \n\t [ '(' ('?'| id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']";
+//			<< "#pragma templet '*' id ['$'] \n\t [ '(' ('?'| id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']";
+			<< "#pragma templet '*' id ['$'] \n\t [ '(' id ('!'|'?') id {',' id ('!'|'?') id)} ')' ] ['+']";
+
 		return EXIT_FAILURE;
 	}
 
