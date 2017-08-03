@@ -19,23 +19,13 @@
 #include <templet.hpp>
 
 using namespace std;
-
 /*$TET$*/
 
 using namespace TEMPLET;
 
-class my_engine{
-public:
-	my_engine(int argc, char *argv[]);
-	void run();
-	void map();
-};
-
 #pragma templet ~mes=
 
-struct mes : message{
-	void send();
-
+struct mes : message_interface{
 /*$TET$mes$$data*/
 	string _mes;
 /*$TET$*/
@@ -43,29 +33,22 @@ struct mes : message{
 
 #pragma templet *ping(p!mes)+
 
-struct ping : actor{
-	ping(my_engine&){
+struct ping : actor_interface{
+	ping(engine_interface&){
 /*$TET$ping$ping*/
 /*$TET$*/
 	}
 
-	bool access(message*);
-
-	void delay(double);
-	double time();
-	void at(int);
-	void stop();
-
-	mes* p();
+	mes* p(){return 0;}
 
 	void start(){
 /*$TET$ping$start*/
-		_p._mes = "Hello PONG!!!";
-		_p.send();
+		p()->_mes = "Hello PONG!!!";
+		p()->send();
 /*$TET$*/
 	}
 
-	void p(mes&m){
+	void p_handler(mes&m){
 /*$TET$ping$p*/
 		cout << m._mes.c_str();
 		stop();
@@ -74,28 +57,19 @@ struct ping : actor{
 
 /*$TET$ping$$code&data*/
 /*$TET$*/
-
-	mes _p;
 };
 
 #pragma templet *pong(p?mes)
 
-struct pong : actor{
-	pong(my_engine&){
+struct pong : actor_interface{
+	pong(engine_interface&){
 /*$TET$pong$pong*/
 /*$TET$*/
 	}
 
-	bool access(message*);
+	void p(mes*){}
 
-	void delay(double);
-	double time();
-	void at(int);
-	void stop();
-
-	void p(mes*);
-
-	void p(mes&m){
+	void p_handler(mes&m){
 /*$TET$pong$p*/
 		cout << m._mes.c_str() << endl;
 		m._mes = "Hello PING!!!";
@@ -105,19 +79,17 @@ struct pong : actor{
 
 /*$TET$pong$$code&data*/
 /*$TET$*/
-
 };
 
-/*$TET$footer*/
 int main(int argc, char *argv[])
 {
-	my_engine e(argc, argv);
-
+	engine_interface e(argc, argv);
+/*$TET$footer*/
 	ping a_ping(e);
 	pong a_pong(e);
 
 	a_pong.p(a_ping.p());
 
 	e.run();
-}
 /*$TET$*/
+}

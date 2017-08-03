@@ -4,81 +4,59 @@
 
 using namespace TEMPLET;
 
-class my_engine{
-public:
-	my_engine(int argc, char *argv[]);
-	void run();
-	void map();
-};
-
 #pragma templet ~mes=
 
-struct mes : message{
-	void send();
-
+struct mes : message_interface{
 /*$TET$mes$$data*/
 /*$TET$*/
 };
 
 #pragma templet *ping(p!mes)+
 
-struct ping : actor{
-	ping(my_engine&){
+struct ping : actor_interface{
+	ping(engine_interface&){
 /*$TET$ping$ping*/
 /*$TET$*/
 	}
 
-	bool access(message*);
-
-	void delay(double);
-	double time();
-	void at(int);
-	void stop();
-
-	mes* p();
+	mes* p(){return 0;}
 
 	void start(){
 /*$TET$ping$start*/
 /*$TET$*/
 	}
 
-	void p(mes&m){
+	void p_handler(mes&m){
 /*$TET$ping$p*/
 /*$TET$*/
 	}
 
 /*$TET$ping$$code&data*/
 /*$TET$*/
-
-	mes _p;
 };
 
 #pragma templet *pong(p?mes)
 
-struct pong : actor{
-	pong(my_engine&){
+struct pong : actor_interface{
+	pong(engine_interface&){
 /*$TET$pong$pong*/
 /*$TET$*/
 	}
 
-	bool access(message*);
+	void p(mes*){}
 
-	void delay(double);
-	double time();
-	void at(int);
-	void stop();
-
-	void p(mes*);
-
-	void p(mes&m){
+	void p_handler(mes&m){
 /*$TET$pong$p*/
 /*$TET$*/
 	}
 
 /*$TET$pong$$code&data*/
 /*$TET$*/
-
 };
 
+int main(int argc, char *argv[])
+{
+	engine_interface e(argc, argv);
 /*$TET$footer*/
 /*$TET$*/
+}

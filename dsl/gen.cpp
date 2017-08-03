@@ -23,26 +23,6 @@
 
 using namespace std;
 
-/*
-Syntax:
-// #pragma templet '~' id ['$'] [ '(' ['-'] id ('!'|'?') {',' ['-'] id ('!'|'?')} ')' ] ['=']
-#pragma templet '~' id ['$'] ['=']
-
-Samples:
-#pragma templet ~message
-#pragma templet ~message =
-#pragma templet ~message$(submessage1?,submessage2!,submessage3!,-submessage4?)
-
-Syntax:
-//#pragma templet '*' id ['$'] [ '(' ('?'| id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']
-#pragma templet '*' id ['$'] [ '(' id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']
-
-Samples:
-#pragma templet *actor
-#pragma templet *actor +
-#pragma templet *actor$(?,port?message,port!message) +
-*/
-
 struct submessage{
   string name;
   bool dummy;
@@ -70,10 +50,12 @@ struct actor{
   list<port> ports;
 };
 
+// from parse.cpp
 bool openparse(string&name,string&pragma);
 bool getpragma(string&argstring,int&line);
 void closeparse();
 
+// from lexer.cpp
 void lexinit(string&s);
 bool getlex(string&lex);
 bool ungetlex();
@@ -285,13 +267,13 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 
 	outf << endl;
 
-	outf << "using namespace TEMPLET;\n\n"
-		"class my_engine{\n"
-		"public:\n"
-		"\tmy_engine(int argc, char *argv[]);\n"
-		"\tvoid run();\n"
-		"\tvoid map();\n"
-		"};\n";
+	outf << "using namespace TEMPLET;\n";
+//		"class my_engine{\n"
+//		"public:\n"
+//		"\tmy_engine(int argc, char *argv[]){}\n"
+//		"\tvoid run(){}\n"
+//		"\tvoid map(){}\n"
+//		"};\n";
 
 	outf << endl;
 
@@ -299,7 +281,7 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		message& m = *it;
 	//for (message& m : mlist){
 		outf << "#pragma templet "; print_message(outf, m); outf << endl << endl;
-		outf << "struct " << m.name << " : message{\n";
+		outf << "struct " << m.name << " : message_interface{\n";
 
 		if(!m.duplex)outf << "\t" << m.name << "(actor*, engine*);\n";
 
@@ -329,7 +311,7 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 	//	else{
 	//		if (m.duplex){
 	//			outf << "\tbool access(actor*);\n";
-				outf << "\tvoid send();\n";
+	//			outf << "\tvoid send();\n";
 	//		}
 	//		else{
 	//			outf << "\tbool access(actor*);\n";
@@ -338,7 +320,7 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 	//	}  
 
 		if (m.serilizable){
-			outf << endl;
+			//outf << endl;
 			outf << "\tvoid save(saver*s){\n"
 				"/*$TET$" << m.name << "$$save*/\n"
 				"\t\t//::save(s, &x, sizeof(x));\n"
@@ -352,7 +334,7 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		}
 
 		/*if (m.subm.empty())*/ {
-			outf << endl;
+			//outf << endl;
 			outf << "/*$TET$" << m.name << "$$data*/\n"
 				"/*$TET$*/\n";
 		}
@@ -364,19 +346,19 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		actor& a = *it;
 	//for (actor& a : alist){
 		outf << "#pragma templet "; print_actor(outf, a); outf << endl << endl;
-		outf << "struct " << a.name << " : actor{\n";
+		outf << "struct " << a.name << " : actor_interface{\n";
 
-		outf << "\t" << a.name << "(my_engine&){\n"
+		outf << "\t" << a.name << "(engine_interface&){\n"
 			"/*$TET$" << a.name << "$" << a.name << "*/\n"
 			"/*$TET$*/\n"
-			"\t}\n\n"
+			"\t}\n";
 
-			"\tbool access(message*);\n\n"
+		//	"\tbool access(message*);\n\n"
 
-			"\tvoid delay(double);\n"
-			"\tdouble time();\n"
-			"\tvoid at(int);\n"
-			"\tvoid stop();\n";
+		//	"\tvoid delay(double);\n"
+		//	"\tdouble time();\n"
+		//	"\tvoid at(int);\n"
+		//	"\tvoid stop();\n";
 
 		if (!a.ports.empty()) outf << endl;
 
@@ -384,11 +366,11 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			port& p = *it;
 		//for (auto& p:a.ports){
 			if (p.type == port::CLIENT)
-				outf << "\t" << p.message_name << "* " << p.name << "();\n";
+				outf << "\t" << p.message_name << "* " << p.name << "(){return 0;}\n";
 			else if (p.type == port::SERVER)
-				outf << "\tvoid " << p.name << "(" << p.message_name << "*);\n";
+				outf << "\tvoid " << p.name << "(" << p.message_name << "*){}\n";
 		}
-
+		
 		if (a.initially_active){
 			outf << endl;
 			outf << "\tvoid start(){\n"
@@ -414,7 +396,7 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			port& p = *it;
 		//for (auto &p : a.ports){
 			outf << endl;
-			outf << "\tvoid " << p.name << "(" << p.message_name << "&m){\n"
+			outf << "\tvoid " << p.name << "_handler(" << p.message_name << "&m){\n"
 				"/*$TET$" << a.name << "$" << p.name << "*/\n"
 				"/*$TET$*/\n"
 				"\t}\n";
@@ -438,22 +420,28 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		outf << "/*$TET$" << a.name << "$$code&data*/\n"
 			"/*$TET$*/\n";
 
-		if (!a.ports.empty()){
-			outf << endl;
+//		if (!a.ports.empty()){
+//			outf << endl;
 
-			for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
-				port& x = *it;
+//			for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
+//				port& x = *it;
 			//	for (auto& x : a.ports){
-				if (x.type == port::CLIENT)outf << "\t" << x.message_name << " _" << x.name << ";" << endl;
+//				if (x.type == port::CLIENT)outf << "\t" << x.message_name << " _" << x.name << ";" << endl;
 			
-			}
-		}
+//			}
+//		}
 
 		outf << "};\n\n";
 	}
 
+	outf << "int main(int argc, char *argv[])\n"
+		"{\n"
+		"\tengine_interface e(argc, argv);\n";
+
 	outf << "/*$TET$footer*/\n"
-		"/*$TET$*/\n";
+			"/*$TET$*/\n";
+	
+	outf << "}\n";
 }
 
 void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
@@ -733,7 +721,7 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
 			port& p = *it;
 			//for (auto& p : a.ports)
-			outf << "\t\t\tcase TAG_" << p.name << ": ((" << a.name << "*)a)->" << p.name << "(*((" << p.message_name << "*)m)); break;\n";
+			outf << "\t\t\tcase TAG_" << p.name << ": ((" << a.name << "*)a)->" << p.name << "_handler(*((" << p.message_name << "*)m)); break;\n";
 		}
 
 		if (a.initially_active) outf << "\t\t\tcase START: (("<< a.name <<"*)a)->start(); break;\n";
@@ -767,7 +755,7 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			port& p = *it;
 		//for (auto &p : a.ports){
 			outf << endl;
-			outf << "\tvoid " << p.name << "(" << p.message_name << "&m){\n"
+			outf << "\tvoid " << p.name << "_handler(" << p.message_name << "&m){\n"
 				"/*$TET$" << a.name << "$" << p.name << "*/\n"
 				"/*$TET$*/\n"
 				"\t}\n";
@@ -806,8 +794,14 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		outf << "};\n\n";
 	}
 
+	outf << "int main(int argc, char *argv[])\n"
+		"{\n"
+		"\tmy_engine e(argc, argv);\n";
+
 	outf << "/*$TET$footer*/\n"
 		"/*$TET$*/\n";
+
+	outf << "}\n";
 }
 
 int main(int argc, char *argv[])

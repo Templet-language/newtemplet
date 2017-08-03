@@ -46,6 +46,24 @@ namespace TEMPLET{
 	inline void restore(restorer*, void*, size_t);
 }
 
+namespace TEMPLET {
+	struct engine_interface {
+		engine_interface(int argc, char *argv[]) {}
+		void run() {}
+		void map() {}
+	};
+
+	struct message_interface { void send() {} };
+
+	struct actor_interface {
+		bool access(message_interface*) { return false; }
+		void delay(double) {}
+		double time() { return 0; }
+		void at(int) {} 
+		void stop() {} 
+	};
+}
+
 #if defined(DEBUG_EXECUTION) || (!defined(SERIAL_EXECUTION) && !defined(PARALLEL_EXECUTION) && !defined(SIMULATED_EXECUTION) && !defined(DISTRIBUTED_EXECUTION))
 
 #ifndef DEBUG_EXECUTION

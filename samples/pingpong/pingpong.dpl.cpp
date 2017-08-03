@@ -58,7 +58,7 @@ struct ping : actor{
 
 	static void ping_recv_adapter (actor*a, message*m, int tag){
 		switch(tag){
-			case TAG_p: ((ping*)a)->p(*((mes*)m)); break;
+			case TAG_p: ((ping*)a)->p_handler(*((mes*)m)); break;
 			case START: ((ping*)a)->start(); break;
 		}
 	}
@@ -68,7 +68,7 @@ struct ping : actor{
 /*$TET$*/
 	}
 
-	void p(mes&m){
+	void p_handler(mes&m){
 /*$TET$ping$p*/
 /*$TET$*/
 	}
@@ -102,11 +102,11 @@ struct pong : actor{
 
 	static void pong_recv_adapter (actor*a, message*m, int tag){
 		switch(tag){
-			case TAG_p: ((pong*)a)->p(*((mes*)m)); break;
+			case TAG_p: ((pong*)a)->p_handler(*((mes*)m)); break;
 		}
 	}
 
-	void p(mes&m){
+	void p_handler(mes&m){
 /*$TET$pong$p*/
 /*$TET$*/
 	}
@@ -116,5 +116,9 @@ struct pong : actor{
 
 };
 
+int main(int argc, char *argv[])
+{
+	my_engine e(argc, argv);
 /*$TET$footer*/
 /*$TET$*/
+}

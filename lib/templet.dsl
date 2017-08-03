@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*/
-/*  Copyright 2010-2016 Sergei Vostokin                                     */
+/*  Copyright 2010-2017 Sergei Vostokin                                     */
 /*                                                                          */
 /*  Licensed under the Apache License, Version 2.0 (the "License");         */
 /*  you may not use this file except in compliance with the License.        */
@@ -14,46 +14,172 @@
 /*  limitations under the License.                                          */
 /*--------------------------------------------------------------------------*/
 
-void def()
-{
-	message m1("m1"), m2("m2");
-	m1.duplex().serializable();
+The Message Syntax
+------------------
 
-	actor a("a");
-	a.serializable().startable();
-	a.out("out_port","m1").in("in_port","m2");
+EBNF-based syntax of the message class:
+
+/*------------------------------------------*/
+/*    #pragma templet '~' id ['$'] ['=']    */
+/*------------------------------------------*/
+
+the meaning of the syntax:
+
+// one direction message class
+#pragma templet ~message 
+
+struct message : message_interface{
+	message(actor_interface*, engine*){} // the constructor, you can construct objects of the class manually
+	// here you can add the message class data fields 
+};
+
+// the message interface class
+struct message : message_interface{
+	void send(){}// send the message to some actor
+				// the method can be applied to a message object
+				// you have to bind the message object to some actor beforehand (see Actor-Message Binding)
+};
+
+// two directions (request/respond) message class
+#pragma templet ~message= 
+
+struct message : message_interface{ // you cannot construct objects of the class manually
+	void send();// send the message class object in request or respond
+				// you have to bind two actors beforehand (see Actor-Message Binding)
+	// here you can add the message class data fields
+};
+
+// serializable message class
+#pragma templet ~message$ 
+
+struct message : message_interface{
+	// in addition to the ~message or ~message= properties
+	// you have the two user-defined methods:
+
+	void save(saver*s){
+		//use ::save(s, &x, sizeof(x)); here
+		//to save the message state
+	}
+
+	void restore(restorer*r){
+		// use ::restore(r, &x, sizeof(x)); here
+		// to restore the message state
+	} 
+};
+
+The Actor Syntax
+----------------
+
+EBNF-based syntax of the actor class:
+
+/*----------------------------------------------------------------------------------------------*/
+/*    #pragma templet '*' id ['$'] [ '(' id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']    */
+/*----------------------------------------------------------------------------------------------*/
+
+the meaning of the syntax:
+
+// the basic actor interface
+#pragma templet *actor
+
+struct actor : actor_interface{
+	actor(my_engine&){
+		// place initialization code here
+	}
+
+	// here you can add data fields and methods
+};
+
+// the actor interface class
+struct actor_interface{
+	bool access(message_interface*){retrun false;}// checking wether you can read/write message data fields 
+			// the method is used inside message handlers only
+	void delay(double){}// set virtual delay for simulation, the method is used inside message handlers only
+	double time(){return 0;} // get virtual current time, the method is used inside message handlers only
+	void at(int){} // set MPI process number for the actor object, the method is used outside message handlers only
+	void stop(){}  // inform the runtime that the execution is completed, the method is used inside message handlers only
 }
 
-#pragma templet ~m1$=
-struct m1:message{
-	void send();
-	//
-	void save(saver*s){/*--*/}
-	void restore(restorer*r){/*--*/}
-	/*--*/
+// serializable actor class
+#pragma templet *actor$
+
+struct actor : actor_interface{
+	// in addition to the other actors properties
+	// you have the two user-defined methods:
+
+	void save(saver*s){
+		//use ::save(s, &x, sizeof(x)); here
+		//to save the actor state
+	}
+
+	void restore(restorer*r){
+		// use ::restore(r, &x, sizeof(x)); here
+		// to restore the actor state
+	}
 };
 
-#pragma templet ~m2
-struct m2:message{
-	void send();
-	/*--*/
+// initially active actor
+#pragma templet *actor+
+
+struct actor : actor_interface{
+	// in addition to the other actors properties
+	// you have this user-defined method:
+	
+	void start(){
+	// do somethig and send messageses to other actors
+	}
 };
 
-#pragma templet *a$(out_port!m1,in_port?m2)+
-struct a:actor{
-	a(engine&);
-	access(message&);
-	//
-	void save(saver*s){/*--*/}
-	void restore(restorer*r){/*--*/}
-	//
-	void start(){/*--*/}
-	void out_port(m1& m){/*--*/}
-	void in_port(m2& m){/*--*/}
-	//
-	m1* out_port();
-	void in_port(m2*);
-	//
-	m1 _out_port;
-	/*--*/
+// define a server-side port for the actor
+#pragma templet *actor(port?message)
+
+struct actor : actor_interface{
+	// in addition to the other actors properties
+	// you have one build-in and one user-defined method for every 'port?message' :
+
+	void port(message*); // use this method to bind some messages to the port,
+
+	void port_handler(message&m){
+	// when you will resive the messages in this message handler
+	// access(&m) is always true until the call to m.send();
+	}
 };
+
+// define a client-side port for the actor
+#pragma templet *actor(port!message)
+
+struct actor : actor_interface{
+    // in addition to the other actors properties
+	// you have build-in method and user-defined method for every 'port!message':
+
+	message* port(); // use this method to get a message bound to the port
+
+	void port_handler(message&m){
+	// you will resive the bound message in respond to previous send
+	// access(&m) is always true until the 'm.send()' call for the next request
+	}
+};
+
+Actor-Message Binding
+---------------------
+
+// the runtime engine interface class
+class my_engine{
+public:
+	my_engine(int argc, char *argv[]); // construct the engine (one for MPI apps)
+	void run(); // run the actor system connected to the engine
+	void map(); // map actors to MPI processes
+};
+
+int main(int argc, char *argv[])
+{
+	my_engine e(argc, argv); // create an engine
+
+	ping a_ping(e);  // create 'a_ping' actor and bind it to the engine
+	pong a_pong(e);  // create 'a_pong' actor and bind it to the engine
+
+	a_pong.p(a_ping.p()); // (1) get the message from a_ping client port
+	                      // (2) bing the message to a_pong server port  
+
+	e.run(); // run the actor system connected to the engine (see the samples/pingpong  for details)
+}
+
