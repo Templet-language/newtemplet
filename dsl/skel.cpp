@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
 	for (int i = 1; i < argc; i++) {
 		char *cmd = argv[i];
 
-		if (cmd[0] == '-' /* || cmd[0] == '/' */) {
+		if (cmd[0] == '-') {
 			switch (cmd[1]) {
 			case 'O':case 'o':
 				outfile = string(argv[i + 1]);

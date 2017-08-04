@@ -57,6 +57,7 @@ namespace TEMPLET {
 
 	struct actor_interface {
 		bool access(message_interface*) { return false; }
+		bool access(message_interface&) { return false; }
 		void delay(double) {}
 		double time() { return 0; }
 		void at(int) {} 

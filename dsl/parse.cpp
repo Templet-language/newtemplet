@@ -17,7 +17,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-//#include <regex>
+
 using namespace std;
 
 ifstream file;
@@ -76,28 +76,6 @@ bool getpragma(string&argstring, int&line)
 		line = _line;
 
 		return true;
-
-		/*
-		regex rx("[ |\t]*#[ |\t]*pragma[ |\t]+" + _pragma + "[ |\t]+.*");
-		if (regex_match(str, rx)) 
-		{
-			line = _line;
-
-			smatch match;
-			regex reg("[ |\t]*#[ |\t]*pragma[ |\t]+" + _pragma + "[ |\t]*(?=\t| )[\t| ^]");
-			regex_search(str, match, reg);
-
-			argstring = match.suffix().str();
-			while (argstring[argstring.length() - 1] == '\\')
-			{
-				argstring = argstring.substr(0, argstring.length() - 1);
-				file.getline(buf, sizeof(buf));
-				argstring += buf;
-				_line++;
-			}
-			return true;
-		}
-		*/
 	}
 	return false;
 }

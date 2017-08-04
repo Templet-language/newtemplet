@@ -93,7 +93,7 @@ struct sorter : actor_interface{
 
 /*$TET$sorter$$code&data*/
 	void sort(){
-		if (!(access(_in) && access(&out)))return;
+		if (!(access(_in) && access(out)))return;
 
 		if(is_first){
 			number=_in->number;
@@ -150,14 +150,14 @@ int main(int argc, char *argv[])
 	for(int i=0;i<N-1;i++)a_sorter[i]=new sorter(e);
 
 	producer a_producer(e);
-	stoper an_endpoint(e);
+	stoper a_stoper(e);
 
 	mes* prev=&a_producer.out;
 	for(int i=0;i<N-1;i++){
 		a_sorter[i]->in(*prev);
 		prev=&(a_sorter[i]->out);
 	}
-	an_endpoint.in(*prev);
+	a_stoper.in(*prev);
 
 	srand(0);
 	for(int i=0;i<N;i++) arr[i]=rand();
@@ -170,11 +170,10 @@ int main(int argc, char *argv[])
 	for(int i=0;i<N-1;i++){
 		arr[i]=a_sorter[i]->number;
 	}
-	arr[N-1]=an_endpoint.number;
+	arr[N-1]=a_stoper.number;
 	
 	printf("\n\nafter the sort: \n");
 	for(int i=0;i<N;i++) printf("%d\n",arr[i]);
-	
 
 	return 0;
 /*$TET$*/

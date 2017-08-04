@@ -48,6 +48,7 @@ struct producer : actor{
 	}
 
 	bool access(message*m){ return TEMPLET::access(m, this); }
+	bool access(message&m){ return TEMPLET::access(&m, this); }
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }
@@ -90,6 +91,7 @@ struct sorter : actor{
 	}
 
 	bool access(message*m){ return TEMPLET::access(m, this); }
+	bool access(message&m){ return TEMPLET::access(&m, this); }
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }
@@ -132,6 +134,7 @@ struct stoper : actor{
 	}
 
 	bool access(message*m){ return TEMPLET::access(m, this); }
+	bool access(message&m){ return TEMPLET::access(&m, this); }
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }

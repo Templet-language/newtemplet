@@ -34,8 +34,8 @@ struct message : message_interface{
 };
 
 // the message interface class
-struct message : message_interface{
-	void send(){}// send the message to some actor
+struct message_interface{
+	void send();// send the message to some actor
 				// the method can be applied to a message object
 				// you have to bind the message object to some actor beforehand (see Actor-Message Binding)
 };
@@ -91,12 +91,13 @@ struct actor : actor_interface{
 
 // the actor interface class
 struct actor_interface{
-	bool access(message_interface*){retrun false;}// checking wether you can read/write message data fields 
+	bool access(message_interface*);
+	bool access(message_interface&);// checking wether you can read/write message data fields 
 			// the method is used inside message handlers only
-	void delay(double){}// set virtual delay for simulation, the method is used inside message handlers only
-	double time(){return 0;} // get virtual current time, the method is used inside message handlers only
-	void at(int){} // set MPI process number for the actor object, the method is used outside message handlers only
-	void stop(){}  // inform the runtime that the execution is completed, the method is used inside message handlers only
+	void delay(double);// set virtual delay for simulation, the method is used inside message handlers only
+	double time(); // get virtual current time, the method is used inside message handlers only
+	void at(int) ; // set MPI process number for the actor object, the method is used outside message handlers only
+	void stop();   // inform the runtime that the execution is completed, the method is used inside message handlers only
 }
 
 // serializable actor class
@@ -140,7 +141,7 @@ struct actor : actor_interface{
 
 	void port_handler(message&m){
 	// when you will resive the messages in this message handler
-	// access(&m) is always true until the call to m.send();
+	// access(m) is always true until the call to m.send();
 	}
 };
 
@@ -155,7 +156,7 @@ struct actor : actor_interface{
 
 	void port_handler(message&m){
 	// you will resive the bound message in respond to previous send
-	// access(&m) is always true until the 'm.send()' call for the next request
+	// access(m) is always true until the 'm.send()' call for the next request
 	}
 };
 
@@ -163,7 +164,7 @@ Actor-Message Binding
 ---------------------
 
 // the runtime engine interface class
-class my_engine{
+class engine_interface{
 public:
 	my_engine(int argc, char *argv[]); // construct the engine (one for MPI apps)
 	void run(); // run the actor system connected to the engine
@@ -172,7 +173,7 @@ public:
 
 int main(int argc, char *argv[])
 {
-	my_engine e(argc, argv); // create an engine
+	engine_interface e(argc, argv); // create an engine
 
 	ping a_ping(e);  // create 'a_ping' actor and bind it to the engine
 	pong a_pong(e);  // create 'a_pong' actor and bind it to the engine

@@ -76,6 +76,7 @@ struct master : actor{
 	}
 
 	bool access(message*m){ return TEMPLET::access(m, this); }
+	bool access(message&m){ return TEMPLET::access(&m, this); }
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }
@@ -137,6 +138,7 @@ struct worker : actor{
 	}
 
 	bool access(message*m){ return TEMPLET::access(m, this); }
+	bool access(message&m){ return TEMPLET::access(&m, this); }
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }

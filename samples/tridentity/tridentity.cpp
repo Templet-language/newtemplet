@@ -62,7 +62,7 @@ struct master : actor_interface{
 
 	void sin2_port_handler(value_message&m){
 /*$TET$master$sin2_port*/
-		if (access(&cos2_port)){
+		if (access(cos2_port)){
 			x = cos2_port.x + sin2_port.x; delay(1.0);
 			stop();
 		}
@@ -71,7 +71,7 @@ struct master : actor_interface{
 
 	void cos2_port_handler(value_message&m){
 /*$TET$master$cos2_port*/
-		if (access(&sin2_port)){
+		if (access(sin2_port)){
 			x = cos2_port.x + sin2_port.x; delay(1.0);
 			stop();
 		}
