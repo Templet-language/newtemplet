@@ -26,19 +26,9 @@ int arr[N];
 
 using namespace TEMPLET;
 
-class my_engine{
-public:
-	my_engine(int argc, char *argv[]);
-	void run();
-	void map();
-};
-
 #pragma templet ~mes=
 
-struct mes : message{
-	bool access(actor*);
-	void send();
-
+struct mes : message_interface{
 /*$TET$mes$$data*/
 	int number;
 /*$TET$*/
@@ -46,68 +36,56 @@ struct mes : message{
 
 #pragma templet *producer(out!mes)+
 
-struct producer : actor{
-	producer(my_engine&){
+struct producer : actor_interface{
+	producer(engine_interface&){
 /*$TET$producer$producer*/
 /*$TET$*/
 	}
 
-	void delay(double);
-	double time();
-	void at(int);
-	void stop();
-
-	mes* out();
+	mes out;
 
 	void start(){
 /*$TET$producer$start*/
 		cur = 0;
-		_out.number = arr[cur++];
-		_out.send();
+		out.number = arr[cur++];
+		out.send();
 /*$TET$*/
 	}
 
-	void out(mes&m){
+	void out_handler(mes&m){
 /*$TET$producer$out*/
 		if (cur == N) return;
-		_out.number = arr[cur++];
-		_out.send();
+		out.number = arr[cur++];
+		out.send();
 /*$TET$*/
 	}
 
 /*$TET$producer$$code&data*/
 	int cur;
 /*$TET$*/
-
-	mes _out;
 };
 
 #pragma templet *sorter(in?mes,out!mes)
 
-struct sorter : actor{
-	sorter(my_engine&){
+struct sorter : actor_interface{
+	sorter(engine_interface&){
 /*$TET$sorter$sorter*/
 		is_first=true;
 		_in=0;
 /*$TET$*/
 	}
 
-	void delay(double);
-	double time();
-	void at(int);
-	void stop();
+	void in(mes&){}
+	mes out;
 
-	void in(mes*);
-	mes* out();
-
-	void in(mes&m){
+	void in_handler(mes&m){
 /*$TET$sorter$in*/
 		_in=&m;
 		sort();
 /*$TET$*/
 	}
 
-	void out(mes&m){
+	void out_handler(mes&m){
 /*$TET$sorter$out*/
 		sort();
 /*$TET$*/
@@ -115,7 +93,7 @@ struct sorter : actor{
 
 /*$TET$sorter$$code&data*/
 	void sort(){
-		if (!(_in->access(this) && _out.access(this)))return;
+		if (!(access(_in) && access(&out)))return;
 
 		if(is_first){
 			number=_in->number;
@@ -124,13 +102,13 @@ struct sorter : actor{
 		}
 		else{
 			if(number <= _in->number){
-				_out.number = _in->number;
-				_in->send();_out.send();
+				out.number = _in->number;
+				_in->send();out.send();
 			}
 			else{
-				_out.number = number;
+				out.number = number;
 				number = _in->number;
-				_in->send();_out.send();
+				_in->send();out.send();
 			}
 		}
 	}
@@ -139,26 +117,19 @@ struct sorter : actor{
 	bool is_first;
 	mes* _in;
 /*$TET$*/
-
-	mes _out;
 };
 
 #pragma templet *stoper(in?mes)
 
-struct stoper : actor{
-	stoper(my_engine&){
+struct stoper : actor_interface{
+	stoper(engine_interface&){
 /*$TET$stoper$stoper*/
 /*$TET$*/
 	}
 
-	void delay(double);
-	double time();
-	void at(int);
-	void stop();
+	void in(mes&){}
 
-	void in(mes*);
-
-	void in(mes&m){
+	void in_handler(mes&m){
 /*$TET$stoper$in*/
 		number=m.number;
 		stop();
@@ -168,26 +139,25 @@ struct stoper : actor{
 /*$TET$stoper$$code&data*/
 	int number;
 /*$TET$*/
-
 };
 
-/*$TET$footer*/
 int main(int argc, char *argv[])
 {
-	my_engine e(argc, argv);
-	
+	engine_interface e(argc, argv);
+/*$TET$footer*/
+
 	sorter** a_sorter = new sorter*[N-1];
 	for(int i=0;i<N-1;i++)a_sorter[i]=new sorter(e);
 
 	producer a_producer(e);
 	stoper an_endpoint(e);
 
-	mes* prev=a_producer.out();
+	mes* prev=&a_producer.out;
 	for(int i=0;i<N-1;i++){
-		a_sorter[i]->in(prev);
-		prev=a_sorter[i]->out();
+		a_sorter[i]->in(*prev);
+		prev=&(a_sorter[i]->out);
 	}
-	an_endpoint.in(prev);
+	an_endpoint.in(*prev);
 
 	srand(0);
 	for(int i=0;i<N;i++) arr[i]=rand();
@@ -207,5 +177,5 @@ int main(int argc, char *argv[])
 	
 
 	return 0;
-}
 /*$TET$*/
+}

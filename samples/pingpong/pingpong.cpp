@@ -39,12 +39,12 @@ struct ping : actor_interface{
 /*$TET$*/
 	}
 
-	mes* p(){return 0;}
+	mes p;
 
 	void start(){
 /*$TET$ping$start*/
-		p()->_mes = "Hello PONG!!!";
-		p()->send();
+		p._mes = "Hello PONG!!!";
+		p.send();
 /*$TET$*/
 	}
 
@@ -67,7 +67,7 @@ struct pong : actor_interface{
 /*$TET$*/
 	}
 
-	void p(mes*){}
+	void p(mes&){}
 
 	void p_handler(mes&m){
 /*$TET$pong$p*/
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
 	ping a_ping(e);
 	pong a_pong(e);
 
-	a_pong.p(a_ping.p());
+	a_pong.p(a_ping.p);
 
 	e.run();
 /*$TET$*/

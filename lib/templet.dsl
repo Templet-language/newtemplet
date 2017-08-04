@@ -136,7 +136,7 @@ struct actor : actor_interface{
 	// in addition to the other actors properties
 	// you have one build-in and one user-defined method for every 'port?message' :
 
-	void port(message*); // use this method to bind some messages to the port,
+	void port(message&); // use this method to bind some messages to the port,
 
 	void port_handler(message&m){
 	// when you will resive the messages in this message handler
@@ -151,7 +151,7 @@ struct actor : actor_interface{
     // in addition to the other actors properties
 	// you have build-in method and user-defined method for every 'port!message':
 
-	message* port(); // use this method to get a message bound to the port
+	message port; // use this field to get a message bound to the port
 
 	void port_handler(message&m){
 	// you will resive the bound message in respond to previous send
@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
 	ping a_ping(e);  // create 'a_ping' actor and bind it to the engine
 	pong a_pong(e);  // create 'a_pong' actor and bind it to the engine
 
-	a_pong.p(a_ping.p()); // (1) get the message from a_ping client port
+	a_pong.p(a_ping.p);   // (1) get the message from a_ping client port
 	                      // (2) bing the message to a_pong server port  
 
 	e.run(); // run the actor system connected to the engine (see the samples/pingpong  for details)

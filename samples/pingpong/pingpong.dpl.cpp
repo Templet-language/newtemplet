@@ -39,7 +39,7 @@ struct mes : message{
 struct ping : actor{
 	enum tag{START,TAG_p};
 
-	ping(my_engine&e):_p(this, &e, TAG_p){
+	ping(my_engine&e):p(this, &e, TAG_p){
 		::init(this, &e, ping_recv_adapter);
 		::init(&_start, this, &e);
 		::send(&_start, this, START);
@@ -47,14 +47,14 @@ struct ping : actor{
 /*$TET$*/
 	}
 
-	bool access(message*m){ TEMPLET::access(m, this); }
+	bool access(message*m){ return TEMPLET::access(m, this); }
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }
 	double time(){ return TEMPLET::time(this); }
 	void stop(){ TEMPLET::stop(this); }
 
-	mes* p(){return &_p;}
+	mes p;
 
 	static void ping_recv_adapter (actor*a, message*m, int tag){
 		switch(tag){
@@ -75,8 +75,6 @@ struct ping : actor{
 
 /*$TET$ping$$code&data*/
 /*$TET$*/
-
-	mes _p;
 	message _start;
 };
 
@@ -91,14 +89,14 @@ struct pong : actor{
 /*$TET$*/
 	}
 
-	bool access(message*m){ TEMPLET::access(m, this); }
+	bool access(message*m){ return TEMPLET::access(m, this); }
 
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }
 	double time(){ return TEMPLET::time(this); }
 	void stop(){ TEMPLET::stop(this); }
 
-	void p(mes*m){m->_server_id=TAG_p; m->_srv=this;}
+	void p(mes&m){m._server_id=TAG_p; m._srv=this;}
 
 	static void pong_recv_adapter (actor*a, message*m, int tag){
 		switch(tag){
@@ -113,7 +111,6 @@ struct pong : actor{
 
 /*$TET$pong$$code&data*/
 /*$TET$*/
-
 };
 
 int main(int argc, char *argv[])

@@ -366,9 +366,9 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			port& p = *it;
 		//for (auto& p:a.ports){
 			if (p.type == port::CLIENT)
-				outf << "\t" << p.message_name << "* " << p.name << "(){return 0;}\n";
+				outf << "\t" << p.message_name << " " << p.name << ";\n";
 			else if (p.type == port::SERVER)
-				outf << "\tvoid " << p.name << "(" << p.message_name << "*){}\n";
+				outf << "\tvoid " << p.name << "(" << p.message_name << "&){}\n";
 		}
 		
 		if (a.initially_active){
@@ -660,7 +660,7 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 				port& x = *it1;
 				if (x.type == port::CLIENT){
 					if (first)first = false; else outf << ",";
-					outf << "_" << x.name << "(this, &e, TAG_" << x.name << ")";
+					outf << /*"_" <<*/ x.name << "(this, &e, TAG_" << x.name << ")";
 				};
 			}
 			outf << "{\n";
@@ -691,7 +691,7 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		}
 
 		outf <<
-			"\tbool access(message*m){ TEMPLET::access(m, this); }\n\n"
+			"\tbool access(message*m){ return TEMPLET::access(m, this); }\n\n"
 			"\tvoid at(int _at){ TEMPLET::at(this, _at); }\n"
 			"\tvoid delay(double t){ TEMPLET::delay(this, t); }\n"
 			"\tdouble time(){ return TEMPLET::time(this); }\n"
@@ -703,9 +703,9 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			port& p = *it;
 		//for (auto& p : a.ports){
 			if (p.type == port::CLIENT)
-				outf << "\t" << p.message_name << "* " << p.name << "(){return &_" << p.name << ";}\n";
+				outf << "\t" << p.message_name << " " << p.name << ";\n";
 			else if (p.type == port::SERVER)
-				outf << "\tvoid " << p.name << "(" << p.message_name << "*m){m->_server_id=TAG_"<<p.name<<"; m->_srv=this;}\n";
+				outf << "\tvoid " << p.name << "(" << p.message_name << "&m){m._server_id=TAG_"<<p.name<<"; m._srv=this;}\n";
 		}
 
 		outf << endl;
@@ -779,15 +779,15 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		outf << "/*$TET$" << a.name << "$$code&data*/\n"
 			"/*$TET$*/\n";
 
-		if (!a.ports.empty()){
-			outf << endl;
+	//	if (!a.ports.empty()){
+	//		outf << endl;
 
-			for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
-				port& x = *it;
+	//		for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
+	//			port& x = *it;
 			//for (auto& x : a.ports){
-				if (x.type == port::CLIENT)outf << "\t" << x.message_name << " _" << x.name << ";" << endl;
-			}
-		}
+	//			if (x.type == port::CLIENT)outf << "\t" << x.message_name << " _" << x.name << ";" << endl;
+	//		}
+	//	}
 
 		if(a.initially_active) outf << "\tmessage _start;\n";
 

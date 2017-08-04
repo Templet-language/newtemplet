@@ -12,8 +12,6 @@ struct my_engine : engine{
 	void map(){ TEMPLET::map(this); }
 };
 
-enum MESSAGE_TAGS{ START };
-
 #pragma templet ~value_message$=
 
 struct value_message : message{
@@ -27,10 +25,6 @@ struct value_message : message{
 
 	static void value_message_restore_adapter(message*m, restorer*r){
 		((value_message*)m)->restore(r);
-	}
-
-	bool access(actor*a){
-		return TEMPLET::access(this, a);
 	}
 
 	void send(){
@@ -63,9 +57,9 @@ struct value_message : message{
 #pragma templet *master$(sin2_port!value_message,cos2_port!value_message)+
 
 struct master : actor{
-	enum tag{TAG_sin2_port=START+1,TAG_cos2_port=START+2};
+	enum tag{START,TAG_sin2_port,TAG_cos2_port};
 
-	master(my_engine&e):_sin2_port(this, &e, TAG_sin2_port),_cos2_port(this, &e, TAG_cos2_port){
+	master(my_engine&e):sin2_port(this, &e, TAG_sin2_port),cos2_port(this, &e, TAG_cos2_port){
 		::init(this, &e, master_recv_adapter, master_save_adapter, master_restore_adapter);
 		::init(&_start, this, &e);
 		::send(&_start, this, START);
@@ -81,18 +75,20 @@ struct master : actor{
 		((master*)a)->restore(r);
 	}
 
+	bool access(message*m){ return TEMPLET::access(m, this); }
+
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }
 	double time(){ return TEMPLET::time(this); }
 	void stop(){ TEMPLET::stop(this); }
 
-	value_message* sin2_port(){return &_sin2_port;}
-	value_message* cos2_port(){return &_cos2_port;}
+	value_message sin2_port;
+	value_message cos2_port;
 
 	static void master_recv_adapter (actor*a, message*m, int tag){
 		switch(tag){
-			case TAG_sin2_port: ((master*)a)->sin2_port(*((value_message*)m)); break;
-			case TAG_cos2_port: ((master*)a)->cos2_port(*((value_message*)m)); break;
+			case TAG_sin2_port: ((master*)a)->sin2_port_handler(*((value_message*)m)); break;
+			case TAG_cos2_port: ((master*)a)->cos2_port_handler(*((value_message*)m)); break;
 			case START: ((master*)a)->start(); break;
 		}
 	}
@@ -102,12 +98,12 @@ struct master : actor{
 /*$TET$*/
 	}
 
-	void sin2_port(value_message&m){
+	void sin2_port_handler(value_message&m){
 /*$TET$master$sin2_port*/
 /*$TET$*/
 	}
 
-	void cos2_port(value_message&m){
+	void cos2_port_handler(value_message&m){
 /*$TET$master$cos2_port*/
 /*$TET$*/
 	}
@@ -126,16 +122,13 @@ struct master : actor{
 
 /*$TET$master$$code&data*/
 /*$TET$*/
-
-	value_message _sin2_port;
-	value_message _cos2_port;
 	message _start;
 };
 
 #pragma templet *worker(master_port?value_message)
 
 struct worker : actor{
-	enum tag{TAG_master_port};
+	enum tag{START,TAG_master_port};
 
 	worker(my_engine&e){
 		::init(this, &e, worker_recv_adapter);
@@ -143,28 +136,33 @@ struct worker : actor{
 /*$TET$*/
 	}
 
+	bool access(message*m){ return TEMPLET::access(m, this); }
+
 	void at(int _at){ TEMPLET::at(this, _at); }
 	void delay(double t){ TEMPLET::delay(this, t); }
 	double time(){ return TEMPLET::time(this); }
 	void stop(){ TEMPLET::stop(this); }
 
-	void master_port(value_message*m){m->_server_id=TAG_master_port; m->_srv=this;}
+	void master_port(value_message&m){m._server_id=TAG_master_port; m._srv=this;}
 
 	static void worker_recv_adapter (actor*a, message*m, int tag){
 		switch(tag){
-			case TAG_master_port: ((worker*)a)->master_port(*((value_message*)m)); break;
+			case TAG_master_port: ((worker*)a)->master_port_handler(*((value_message*)m)); break;
 		}
 	}
 
-	void master_port(value_message&m){
+	void master_port_handler(value_message&m){
 /*$TET$worker$master_port*/
 /*$TET$*/
 	}
 
 /*$TET$worker$$code&data*/
 /*$TET$*/
-
 };
 
+int main(int argc, char *argv[])
+{
+	my_engine e(argc, argv);
 /*$TET$footer*/
 /*$TET$*/
+}

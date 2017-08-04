@@ -19,7 +19,7 @@ struct ping : actor_interface{
 /*$TET$*/
 	}
 
-	mes* p(){return 0;}
+	mes p;
 
 	void start(){
 /*$TET$ping$start*/
@@ -43,7 +43,7 @@ struct pong : actor_interface{
 /*$TET$*/
 	}
 
-	void p(mes*){}
+	void p(mes&){}
 
 	void p_handler(mes&m){
 /*$TET$pong$p*/

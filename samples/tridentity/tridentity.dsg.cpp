@@ -4,19 +4,9 @@
 
 using namespace TEMPLET;
 
-class my_engine{
-public:
-	my_engine(int argc, char *argv[]);
-	void run();
-	void map();
-};
-
 #pragma templet ~value_message$=
 
-struct value_message : message{
-	bool access(actor*);
-	void send();
-
+struct value_message : message_interface{
 	void save(saver*s){
 /*$TET$value_message$$save*/
 		//::save(s, &x, sizeof(x));
@@ -28,38 +18,32 @@ struct value_message : message{
 		//::restore(r, &x, sizeof(x));
 /*$TET$*/
 	}
-
 /*$TET$value_message$$data*/
 /*$TET$*/
 };
 
 #pragma templet *master$(sin2_port!value_message,cos2_port!value_message)+
 
-struct master : actor{
-	master(my_engine&){
+struct master : actor_interface{
+	master(engine_interface&){
 /*$TET$master$master*/
 /*$TET$*/
 	}
 
-	void delay(double);
-	double time();
-	void at(int);
-	void stop();
-
-	value_message* sin2_port();
-	value_message* cos2_port();
+	value_message sin2_port;
+	value_message cos2_port;
 
 	void start(){
 /*$TET$master$start*/
 /*$TET$*/
 	}
 
-	void sin2_port(value_message&m){
+	void sin2_port_handler(value_message&m){
 /*$TET$master$sin2_port*/
 /*$TET$*/
 	}
 
-	void cos2_port(value_message&m){
+	void cos2_port_handler(value_message&m){
 /*$TET$master$cos2_port*/
 /*$TET$*/
 	}
@@ -78,35 +62,30 @@ struct master : actor{
 
 /*$TET$master$$code&data*/
 /*$TET$*/
-
-	value_message _sin2_port;
-	value_message _cos2_port;
 };
 
 #pragma templet *worker(master_port?value_message)
 
-struct worker : actor{
-	worker(my_engine&){
+struct worker : actor_interface{
+	worker(engine_interface&){
 /*$TET$worker$worker*/
 /*$TET$*/
 	}
 
-	void delay(double);
-	double time();
-	void at(int);
-	void stop();
+	void master_port(value_message&){}
 
-	void master_port(value_message*);
-
-	void master_port(value_message&m){
+	void master_port_handler(value_message&m){
 /*$TET$worker$master_port*/
 /*$TET$*/
 	}
 
 /*$TET$worker$$code&data*/
 /*$TET$*/
-
 };
 
+int main(int argc, char *argv[])
+{
+	engine_interface e(argc, argv);
 /*$TET$footer*/
 /*$TET$*/
+}
