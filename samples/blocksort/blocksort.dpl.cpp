@@ -122,14 +122,14 @@ struct sorter : actor{
 /*$TET$*/
 };
 
-#pragma templet *stopper(in?mes)
+#pragma templet *stoper(in?mes)
 
-struct stopper : actor{
+struct stoper : actor{
 	enum tag{START,TAG_in};
 
-	stopper(my_engine&e){
-		::init(this, &e, stopper_recv_adapter);
-/*$TET$stopper$stopper*/
+	stoper(my_engine&e){
+		::init(this, &e, stoper_recv_adapter);
+/*$TET$stoper$stoper*/
 /*$TET$*/
 	}
 
@@ -143,18 +143,18 @@ struct stopper : actor{
 
 	void in(mes&m){m._server_id=TAG_in; m._srv=this;}
 
-	static void stopper_recv_adapter (actor*a, message*m, int tag){
+	static void stoper_recv_adapter (actor*a, message*m, int tag){
 		switch(tag){
-			case TAG_in: ((stopper*)a)->in_handler(*((mes*)m)); break;
+			case TAG_in: ((stoper*)a)->in_handler(*((mes*)m)); break;
 		}
 	}
 
 	void in_handler(mes&m){
-/*$TET$stopper$in*/
+/*$TET$stoper$in*/
 /*$TET$*/
 	}
 
-/*$TET$stopper$$code&data*/
+/*$TET$stoper$$code&data*/
 /*$TET$*/
 };
 

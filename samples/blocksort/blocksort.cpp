@@ -1,6 +1,6 @@
 /*$TET$actor*/
 /*--------------------------------------------------------------------------*/
-/*  Copyright 2016 Sergei Vostokin                                          */
+/*  Copyright 2017 Sergei Vostokin                                          */
 /*                                                                          */
 /*  Licensed under the Apache License, Version 2.0 (the "License");         */
 /*  you may not use this file except in compliance with the License.        */
@@ -22,6 +22,33 @@ using namespace std;
 
 const int N = 10;
 int arr[N];
+
+/*---------------------------------*/
+#include <algorithm>
+
+const int NUM_BLOCKS = 2;
+const int BLOCK_SIZE = 10;
+
+int block_array[NUM_BLOCKS*BLOCK_SIZE] = {9,2,3,4,5,   6,7,8,9,9,  92,3,4,5,6, 1,5,8,0,10};
+
+void block_sort(int block_num)
+{
+	std::sort(&block_array[block_num*BLOCK_SIZE], &block_array[(block_num+1)*BLOCK_SIZE]);
+}
+
+void block_merge(int less_block_num, int more_block_num)
+{
+	int tmp_array[2*BLOCK_SIZE];
+	std::merge(&block_array[less_block_num*BLOCK_SIZE], &block_array[(less_block_num + 1)*BLOCK_SIZE],
+		&block_array[more_block_num*BLOCK_SIZE], &block_array[(more_block_num + 1)*BLOCK_SIZE],
+		&tmp_array[0]);
+	std::copy(&tmp_array[0], &tmp_array[BLOCK_SIZE], &block_array[less_block_num*BLOCK_SIZE]);
+	std::copy(&tmp_array[BLOCK_SIZE], &tmp_array[2*BLOCK_SIZE], &block_array[more_block_num*BLOCK_SIZE]);
+}
+/*---------------------------------*/
+
+
+
 /*$TET$*/
 
 using namespace TEMPLET;
@@ -143,9 +170,21 @@ struct stopper : actor_interface{
 
 int main(int argc, char *argv[])
 {
-	engine_interface e(argc, argv);
-/*$TET$footer*/
+	for (int i = 0; i < 20; i++) std::cout << block_array[i] << ' '; cout << endl;
 
+	block_sort(0);
+	for (int i = 0; i < 20; i++) std::cout << block_array[i] << ' '; cout << endl;
+
+	block_sort(1);
+	for (int i = 0; i < 20; i++) std::cout << block_array[i] << ' '; cout << endl;
+
+	block_merge(0, 1);
+	for (int i = 0; i < 20; i++) std::cout << block_array[i] << ' '; cout << endl;
+
+
+	//engine_interface e(argc, argv);
+/*$TET$footer*/
+	/*
 	sorter** a_sorter = new sorter*[N-1];
 	for(int i=0;i<N-1;i++)a_sorter[i]=new sorter(e);
 
@@ -176,5 +215,6 @@ int main(int argc, char *argv[])
 	for(int i=0;i<N;i++) printf("%d\n",arr[i]);
 
 	return 0;
+	*/
 /*$TET$*/
 }
