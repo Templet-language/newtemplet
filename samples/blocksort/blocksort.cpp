@@ -170,17 +170,20 @@ struct stopper : actor_interface{
 
 int main(int argc, char *argv[])
 {
-	for (int i = 0; i < 20; i++) std::cout << block_array[i] << ' '; cout << endl;
+	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++) std::cout << block_array[i] << ' '; cout << endl;
 
 	block_sort(0);
-	for (int i = 0; i < 20; i++) std::cout << block_array[i] << ' '; cout << endl;
+	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++) std::cout << block_array[i] << ' '; cout << endl;
 
 	block_sort(1);
-	for (int i = 0; i < 20; i++) std::cout << block_array[i] << ' '; cout << endl;
+	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++) std::cout << block_array[i] << ' '; cout << endl;
 
 	block_merge(0, 1);
-	for (int i = 0; i < 20; i++) std::cout << block_array[i] << ' '; cout << endl;
-
+	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++) std::cout << block_array[i] << ' '; cout << endl;
+	
+	// generalized seq blocksort
+	for(int i=0;i<NUM_BLOCKS;i++) block_sort(i);
+	for(int i=1;i<NUM_BLOCKS;i++) for(int j=0;j<i;j++) block_merge(j,i);
 
 	//engine_interface e(argc, argv);
 /*$TET$footer*/
