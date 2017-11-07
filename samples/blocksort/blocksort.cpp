@@ -17,6 +17,7 @@
 
 #include <iostream>
 #include <templet.hpp>
+#include <omp.h>
 
 using namespace std;
 
@@ -26,10 +27,10 @@ int arr[N];
 /*---------------------------------*/
 #include <algorithm>
 
-const int NUM_BLOCKS = 2;
-const int BLOCK_SIZE = 10;
+const int NUM_BLOCKS = 100;
+const int BLOCK_SIZE = 10000;
 
-int block_array[NUM_BLOCKS*BLOCK_SIZE] = {9,2,3,4,5,   6,7,8,9,9,  92,3,4,5,6, 1,5,8,0,10};
+int block_array[NUM_BLOCKS*BLOCK_SIZE];
 
 void block_sort(int block_num)
 {
@@ -44,6 +45,16 @@ void block_merge(int less_block_num, int more_block_num)
 		&tmp_array[0]);
 	std::copy(&tmp_array[0], &tmp_array[BLOCK_SIZE], &block_array[less_block_num*BLOCK_SIZE]);
 	std::copy(&tmp_array[BLOCK_SIZE], &tmp_array[2*BLOCK_SIZE], &block_array[more_block_num*BLOCK_SIZE]);
+}
+
+bool is_sorted()
+{
+	int prev = block_array[0];
+	for (int i = 1; i < NUM_BLOCKS*BLOCK_SIZE; i++) {
+		if (prev > block_array[i])return false;
+		prev = block_array[i];
+	}
+	return true;
 }
 /*---------------------------------*/
 
@@ -170,24 +181,20 @@ struct stopper : actor_interface{
 
 int main(int argc, char *argv[])
 {
-	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++) std::cout << block_array[i] << ' '; cout << endl;
-
-	block_sort(0);
-	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++) std::cout << block_array[i] << ' '; cout << endl;
-
-	block_sort(1);
-	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++) std::cout << block_array[i] << ' '; cout << endl;
-
-	block_merge(0, 1);
-	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++) std::cout << block_array[i] << ' '; cout << endl;
-	
-	// generalized seq blocksort
-	for(int i=0;i<NUM_BLOCKS;i++) block_sort(i);
-	for(int i=1;i<NUM_BLOCKS;i++) for(int j=0;j<i;j++) block_merge(j,i);
-
 	//engine_interface e(argc, argv);
 /*$TET$footer*/
-	/*
+
+	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++)	block_array[i] = rand();
+
+	// generalized sequantial blocksort
+	double time = omp_get_wtime();
+	for (int i = 0; i<NUM_BLOCKS; i++) block_sort(i);
+	for (int i = 1; i<NUM_BLOCKS; i++) for (int j = 0; j<i; j++) block_merge(j, i);
+	time = omp_get_wtime() - time;
+
+	if (!is_sorted())std::cout << "\nSomething went wrong!!!\n";
+	else std::cout << "Sort time is " << time << " sec";
+/*
 	sorter** a_sorter = new sorter*[N-1];
 	for(int i=0;i<N-1;i++)a_sorter[i]=new sorter(e);
 
