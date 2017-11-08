@@ -18,17 +18,15 @@
 #include <iostream>
 #include <templet.hpp>
 #include <omp.h>
+#include <algorithm>
 
 using namespace std;
 
-const int N = 10;
-int arr[N];
+const int NUM_BLOCKS = 2;
+const int BLOCK_SIZE = 50000000;
 
-/*---------------------------------*/
-#include <algorithm>
-
-const int NUM_BLOCKS = 100;
-const int BLOCK_SIZE = 10000;
+//const int NUM_BLOCKS = 1;
+//const int BLOCK_SIZE = 100000000;
 
 int block_array[NUM_BLOCKS*BLOCK_SIZE];
 
@@ -39,7 +37,7 @@ void block_sort(int block_num)
 
 void block_merge(int less_block_num, int more_block_num)
 {
-	int tmp_array[2*BLOCK_SIZE];
+	static int tmp_array[2*BLOCK_SIZE];
 	std::merge(&block_array[less_block_num*BLOCK_SIZE], &block_array[(less_block_num + 1)*BLOCK_SIZE],
 		&block_array[more_block_num*BLOCK_SIZE], &block_array[(more_block_num + 1)*BLOCK_SIZE],
 		&tmp_array[0]);
@@ -56,9 +54,6 @@ bool is_sorted()
 	}
 	return true;
 }
-/*---------------------------------*/
-
-
 
 /*$TET$*/
 
@@ -68,46 +63,80 @@ using namespace TEMPLET;
 
 struct mes : message_interface{
 /*$TET$mes$$data*/
-	int number;
+	int block_j;
 /*$TET$*/
 };
 
-#pragma templet *producer(out!mes)+
+#pragma templet *sorter(out!mes)+
 
-struct producer : actor_interface{
-	producer(engine_interface&){
-/*$TET$producer$producer*/
+struct sorter : actor_interface{
+	sorter(engine_interface&){
+/*$TET$sorter$sorter*/
 /*$TET$*/
 	}
 
 	mes out;
 
 	void start(){
-/*$TET$producer$start*/
-		cur = 0;
-		out.number = arr[cur++];
+/*$TET$sorter$start*/
+		block_sort(block_i);
 		out.send();
 /*$TET$*/
 	}
 
 	void out_handler(mes&m){
+/*$TET$sorter$out*/
+/*$TET$*/
+	}
+
+/*$TET$sorter$$code&data*/
+	int block_i;
+/*$TET$*/
+};
+
+#pragma templet *producer(in?mes,out!mes)
+
+struct producer : actor_interface{
+	producer(engine_interface&){
+/*$TET$producer$producer*/
+		block_j = NUM_BLOCKS;
+/*$TET$*/
+	}
+
+	void in(mes&){}
+	mes out;
+
+	void in_handler(mes&m){
+/*$TET$producer$in*/
+		block_j--;
+		if (!block_j) start();
+/*$TET$*/
+	}
+
+	void out_handler(mes&m){
 /*$TET$producer$out*/
-		if (cur == N) return;
-		out.number = arr[cur++];
+		if (block_j == NUM_BLOCKS) return;
+		out.block_j = ++block_j;
 		out.send();
 /*$TET$*/
 	}
 
 /*$TET$producer$$code&data*/
-	int cur;
+	void start() {
+		block_j = 0;
+		out.block_j = block_j++;
+		out.send();
+	}
+
+	int block_j;
 /*$TET$*/
 };
 
-#pragma templet *sorter(in?mes,out!mes)
+#pragma templet *merger(in?mes,out!mes)
 
-struct sorter : actor_interface{
-	sorter(engine_interface&){
-/*$TET$sorter$sorter*/
+struct merger : actor_interface{
+	merger(engine_interface&){
+/*$TET$merger$merger*/
 		is_first=true;
 		_in=0;
 /*$TET$*/
@@ -117,41 +146,34 @@ struct sorter : actor_interface{
 	mes out;
 
 	void in_handler(mes&m){
-/*$TET$sorter$in*/
+/*$TET$merger$in*/
 		_in=&m;
 		sort();
 /*$TET$*/
 	}
 
 	void out_handler(mes&m){
-/*$TET$sorter$out*/
+/*$TET$merger$out*/
 		sort();
 /*$TET$*/
 	}
 
-/*$TET$sorter$$code&data*/
+/*$TET$merger$$code&data*/
 	void sort(){
 		if (!(access(_in) && access(out)))return;
 
 		if(is_first){
-			number=_in->number;
 			is_first=false;
 			_in->send();
 		}
 		else{
-			if(number <= _in->number){
-				out.number = _in->number;
-				_in->send();out.send();
-			}
-			else{
-				out.number = number;
-				number = _in->number;
-				_in->send();out.send();
-			}
+			block_merge(_in->block_j,block_i);
+			out.block_j = _in->block_j;
+			_in->send();out.send();
 		}
 	}
 
-	int number;
+	int  block_i;
 	bool is_first;
 	mes* _in;
 /*$TET$*/
@@ -169,62 +191,66 @@ struct stopper : actor_interface{
 
 	void in_handler(mes&m){
 /*$TET$stopper$in*/
-		number=m.number;
 		stop();
 /*$TET$*/
 	}
 
 /*$TET$stopper$$code&data*/
-	int number;
 /*$TET$*/
 };
 
 int main(int argc, char *argv[])
 {
-	//engine_interface e(argc, argv);
+	engine_interface e(argc, argv);
 /*$TET$footer*/
 
-	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++)	block_array[i] = rand();
+	//for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++)	block_array[i] = rand();
 
-	// generalized sequantial blocksort
+	//////////////// generalized sequantial blocksort /////////////
 	double time = omp_get_wtime();
-	for (int i = 0; i<NUM_BLOCKS; i++) block_sort(i);
-	for (int i = 1; i<NUM_BLOCKS; i++) for (int j = 0; j<i; j++) block_merge(j, i);
-	time = omp_get_wtime() - time;
+//#pragma omp parallel for
+	//for (int i = 0; i<NUM_BLOCKS; i++) block_sort(i);
+	//for (int i = 1; i<NUM_BLOCKS; i++) for (int j = 0; j<i; j++) block_merge(j, i);
+	//time = omp_get_wtime() - time;
 
-	if (!is_sorted())std::cout << "\nSomething went wrong!!!\n";
-	else std::cout << "Sort time is " << time << " sec";
-/*
-	sorter** a_sorter = new sorter*[N-1];
-	for(int i=0;i<N-1;i++)a_sorter[i]=new sorter(e);
+	//if (!is_sorted())std::cout << "\nSomething went wrong in the sequantial blocksort!!!\n";
+	//else std::cout << "Sort time is " << time << " sec";
+	///////////////////////////////////////////////////////////////
 
+	/////////////////// parallel actor blocksort //////////////////
 	producer a_producer(e);
 	stopper a_stoper(e);
 
+	sorter** a_sorter = new sorter*[NUM_BLOCKS - 1];
+	for (int i = 0; i < NUM_BLOCKS - 1; i++) { 
+		a_sorter[i] = new sorter(e); 
+		a_sorter[i]->block_i = i;
+		a_producer.in(a_sorter[i]->out);
+	}
+
+	merger** a_merger = new merger*[NUM_BLOCKS-1];
+	for(int i=0;i<NUM_BLOCKS-1;i++)a_merger[i]=new merger(e);
+	
 	mes* prev=&a_producer.out;
-	for(int i=0;i<N-1;i++){
-		a_sorter[i]->in(*prev);
-		prev=&(a_sorter[i]->out);
+	for(int i=0;i<NUM_BLOCKS -1;i++){
+		a_merger[i]->in(*prev);
+		a_merger[i]->block_i = i;
+		prev=&(a_merger[i]->out);
 	}
 	a_stoper.in(*prev);
 
-	srand(0);
-	for(int i=0;i<N;i++) arr[i]=rand();
+	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++)	block_array[i] = rand();
 	
-	printf("before the sort: \n");
-	for (int i = 0; i < N; i++) printf("%d\n", arr[i]);
-
+	time = omp_get_wtime();
+	for (int i = 0; i<NUM_BLOCKS; i++) block_sort(i); /////////////
 	e.run();
-	
-	for(int i=0;i<N-1;i++){
-		arr[i]=a_sorter[i]->number;
-	}
-	arr[N-1]=a_stoper.number;
-	
-	printf("\n\nafter the sort: \n");
-	for(int i=0;i<N;i++) printf("%d\n",arr[i]);
+	time = omp_get_wtime() - time;
+
+	if (!is_sorted())std::cout << "\nSomething went wrong in the parallel actor blocksort!!!\n";
+	else std::cout << "Sort time is " << time << " sec";
 
 	return 0;
-	*/
+	///////////////////////////////////////////////////////////////
+	
 /*$TET$*/
 }
