@@ -17,11 +17,11 @@
 
 #include <iostream>
 
-//#define  PARALLEL_EXECUTION
-//#define  USE_OPENMP
+#define  PARALLEL_EXECUTION
+#define  USE_OPENMP
 
-#define SIMULATED_EXECUTION
-const double TRADEOFF = 2.5;
+//#define SIMULATED_EXECUTION
+//const double TRADEOFF = 2.5;
 
 #include <templet.hpp>
 
@@ -30,7 +30,7 @@ const double TRADEOFF = 2.5;
 
 using namespace std;
 
-const int NUM_BLOCKS = 4;
+const int NUM_BLOCKS = 12;
 const int BLOCK_SIZE = 10000000;
 
 int block_array[NUM_BLOCKS*BLOCK_SIZE];
@@ -127,11 +127,15 @@ struct sorter : actor{
 
 	void start(){
 /*$TET$sorter$start*/
+#if defined(SIMULATED_EXECUTION)
 		double time;
 		time = omp_get_wtime();
+#endif
 		block_sort(i);  // <-- code fragment 2
+#if defined(SIMULATED_EXECUTION)
 		time = omp_get_wtime() - time;
 		delay(time*(1+TRADEOFF));
+#endif
 		out.send();
 /*$TET$*/
 	}
@@ -251,14 +255,15 @@ struct merger : actor{
 			_in->send();
 		}
 		else{
+#if defined(SIMULATED_EXECUTION)
 			double time;
-			
 			time = omp_get_wtime();
+#endif
 			block_merge(j,_in->i);
+#if defined(SIMULATED_EXECUTION)
 			time = omp_get_wtime() - time;
-
 			delay(time*(1 + TRADEOFF));
-
+#endif
 			out.i = _in->i;
 			_in->send();out.send();
 		}                                                // <-- code fragment 3 end
@@ -312,7 +317,9 @@ int main(int argc, char *argv[])
 	my_engine e(argc, argv);
 /*$TET$footer*/
 
-	std::cout << "NUM_BLOCKS = " << NUM_BLOCKS << " BLOCK_SIZE = " << BLOCK_SIZE << endl ;
+	std::cout << "NUM_BLOCKS = " << NUM_BLOCKS << endl
+		<< "BLOCK_SIZE = " << BLOCK_SIZE << endl
+		<< "OMP_NUM_PROCS = " << omp_get_num_procs() << endl;
 
 	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++)	block_array[i] = rand();
 	
@@ -320,7 +327,7 @@ int main(int argc, char *argv[])
 	std::sort(&block_array[0], &block_array[NUM_BLOCKS*BLOCK_SIZE]);                  // <-- code fragment 0
 	time = omp_get_wtime() - time;
 
-	std::cout << "Sequential sort time is " << time << " sec\n";
+	std::cout << "\nSequential sort time is " << time << " sec\n";
 
 	//////////////////// sequential blocksort /////////////////////
 	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++)	block_array[i] = rand();
@@ -364,8 +371,9 @@ int main(int argc, char *argv[])
 	time = omp_get_wtime() - time;
 
 	if (!is_sorted())std::cout << "\nSomething went wrong in the parallel actor block-sort!!!\n";
-	else std::cout << "Parallel block-sort time is " << time << " sec\n";
+	else std::cout << "\nParallel block-sort time is " << time << " sec\n";
 
+#if defined(SIMULATED_EXECUTION)
 	double T1, Tp;
 	int Pmax;
 	double Smax;
@@ -373,12 +381,12 @@ int main(int argc, char *argv[])
 	double Sp;
 
 	if (TEMPLET::stat(&e, &T1, &Tp, &Pmax, &Smax, P, &Sp)) {
-		std::cout << "Simulated sequential time = " << T1 / (1 + TRADEOFF) << " sec\n"
+		std::cout << "\nSimulated sequential time = " << T1 / (1 + TRADEOFF) << " sec\n"
 			<< "Simulated parallel time = " << Tp << " sec\n" 
 			<< "Number of procs in the simulation = " << Pmax << endl
 			<< "TRADEOFF is " << TRADEOFF*100. << " percents";
 	}
-
+#endif
 	return 0;
 	/////////////////////////////////////////////////////////////////
 	
