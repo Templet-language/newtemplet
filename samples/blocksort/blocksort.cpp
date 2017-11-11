@@ -17,21 +17,42 @@
 
 #include <iostream>
 
-#define  PARALLEL_EXECUTION
-#define  USE_OPENMP
+//#define  PARALLEL_EXECUTION
+//#define  USE_OPENMP
 
-//#define SIMULATED_EXECUTION
-//const double TRADEOFF = 2.5;
+#define SIMULATED_EXECUTION
+const double TRADEOFF = 0.0;
 
 #include <templet.hpp>
 
 #include <omp.h>
 #include <algorithm>
 
+#include <stdlib.h>
+
 using namespace std;
 
-const int NUM_BLOCKS = 12;
-const int BLOCK_SIZE = 10000000;
+// 1
+//const int NUM_BLOCKS = 2;
+//const int BLOCK_SIZE = 64000000;
+// 2
+//const int NUM_BLOCKS = 4;
+//const int BLOCK_SIZE = 32000000;
+// 3
+//const int NUM_BLOCKS = 8;
+//const int BLOCK_SIZE = 16000000;
+// 4
+//const int NUM_BLOCKS = 16;
+//const int BLOCK_SIZE = 8000000;
+// 5
+//const int NUM_BLOCKS = 32;
+//const int BLOCK_SIZE = 4000000;
+// 6
+//const int NUM_BLOCKS = 64;
+//const int BLOCK_SIZE = 2000000;
+// 7
+const int NUM_BLOCKS = 128;
+const int BLOCK_SIZE = 1000000;
 
 int block_array[NUM_BLOCKS*BLOCK_SIZE];
 
@@ -324,12 +345,13 @@ int main(int argc, char *argv[])
 {
 	my_engine e(argc, argv);
 /*$TET$footer*/
+	system("uname -a");// for Linux
 
-	std::cout << "NUM_BLOCKS = " << NUM_BLOCKS << endl
+	std::cout << "\nNUM_BLOCKS = " << NUM_BLOCKS << endl
 		<< "BLOCK_SIZE = " << BLOCK_SIZE << endl
 		<< "OMP_NUM_PROCS = " << omp_get_num_procs() << endl;
 
-	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++)	block_array[i] = rand();
+	srand(1); for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++)	block_array[i] = rand();
 	
 	double time = omp_get_wtime();
 	std::sort(&block_array[0], &block_array[NUM_BLOCKS*BLOCK_SIZE]);                  // <-- code fragment 0
@@ -338,7 +360,7 @@ int main(int argc, char *argv[])
 	std::cout << "\nSequential sort time is " << time << " sec\n";
 
 	//////////////////// sequential blocksort /////////////////////
-	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++)	block_array[i] = rand();
+	srand(1); for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++)	block_array[i] = rand();
 	
 	time = omp_get_wtime();
 
@@ -372,7 +394,7 @@ int main(int argc, char *argv[])
 	}
 	a_stoper.in(*prev);
 
-	for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++)	block_array[i] = rand();
+	srand(1); for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++)	block_array[i] = rand();
 	
 	time = omp_get_wtime();
 	e.run();
