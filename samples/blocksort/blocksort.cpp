@@ -42,12 +42,20 @@ void block_sort(int block_num)
 
 void block_merge(int less_block_num, int more_block_num)
 {
-	int tmp_array[2*BLOCK_SIZE];
+	int* tmp_array = (int*)malloc(sizeof(int)*(2*BLOCK_SIZE));
+
+	if (!tmp_array) {
+		std::cout << "Memory allocation failed!!!\n";
+		exit(1);
+	}
+
 	std::merge(&block_array[less_block_num*BLOCK_SIZE], &block_array[(less_block_num + 1)*BLOCK_SIZE],
 		&block_array[more_block_num*BLOCK_SIZE], &block_array[(more_block_num + 1)*BLOCK_SIZE],
 		&tmp_array[0]);
 	std::copy(&tmp_array[0], &tmp_array[BLOCK_SIZE], &block_array[less_block_num*BLOCK_SIZE]);
 	std::copy(&tmp_array[BLOCK_SIZE], &tmp_array[2*BLOCK_SIZE], &block_array[more_block_num*BLOCK_SIZE]);
+
+	free(tmp_array);
 }
 
 bool is_sorted()
