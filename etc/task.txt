@@ -1,0 +1,47 @@
+#include <stdio.h>
+
+class message{};
+
+class my_message : public message{
+};
+
+class actor{
+public:
+    template <class A, class M>
+    void in(M&,void (A::*)(M&)){
+    }
+    template <class A, class M>
+    void out(M&,void (A::*)(M&)){
+    } 
+};
+
+#pragma templet .my_task
+
+#pragma templet *my_actor(m1!my_message,m2?my_message)
+
+class my_actor : public actor{
+public:
+    my_actor(){
+        in<my_actor,my_message>(_m1,&my_actor::on_m1);
+    }
+    
+    void m2(my_message&m){
+        out<my_actor,my_message>(m,&my_actor::on_m2);
+    }
+    
+    void on_m1(my_message&m){
+        
+    }
+
+    void on_m2(my_message&m){
+        
+    }
+    
+    my_message _m1;
+    my_message*_m2;
+};
+
+int main ()
+{
+   return 0;
+}

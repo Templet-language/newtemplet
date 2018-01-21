@@ -1,0 +1,95 @@
+------------------------------------------
+				Templet API
+------------------------------------------
+engine() : engine
+engine.run() : void
+engine.stop() : void
+engine.connect() : void
+------------------------------------------
+message(engine,[duplex,oneway]) : message
+message.send() : bool
+------------------------------------------
+actor(engine) : actor
+actor.out(message,func(message):void) : void
+actor.in (message,func(message):void) : void
+actor.start(func():void) : void
+actor.access(message) : bool
+------------------------------------------
+task(engine,func(task):void) : task
+task.write(name:string,var) : void
+task.read(name:string) : var
+task.submit(func():void) : void
+------------------------------------------
+
+templet ~mes=								///
+
+def create_mes(engine e) : mes {			+++
+	var this = message(e,duplex);			+++
+	var m = "";								///
+	this.add_datum(m);						///
+	var x =0.0;								///
+	this.add_datum(x);						///
+	return (mes)this;						+++
+}											+++	
+
+templet .tsk								///
+
+def create_tsk(engine e) : tsk {			+++
+	var this = task(e,func(tsk t){			+++
+		var x = t.read("x");				///
+		t.write("x",sin(x));				///
+	})										+++
+	return (tsk)this;						+++
+}											+++
+
+templet *ping(p!mes)+						///
+
+def create_ping(engine e) : ping {			+++
+	var this = actor(e);					+++
+	var p = create_mes(e);					+++
+	this.out(p,func(mes m){					+++
+		// this.access(m) -->true
+		print(p.m, p.x);					///
+		e.stop();							///
+	});										+++
+	this.add_datum(p);						+++
+	this.start(func(){						+++
+			p.m="hello ping !!!" +			///
+				"pls, compute sine x";		///
+			p.x=0.12345;					///	
+			p.send();						///
+	})										+++
+	return (ping)this;						+++
+}											+++
+
+templet *pong(p?mes,t.tsk)					///
+
+def create_pong(engine e) : pong {			+++
+	var this = actor(e);					+++
+	var t = create_tsk(e);					+++
+	this.add_func(p,func(mes m){			+++
+		this.in(m,func(mes m){				+++
+			// this.access(m) -->true
+			print(p.m);						///
+			t.write("x",p.x);				///
+			t.submit(func(){				///	
+				p.m="hello pong !!!" +		///
+					"sine x is";			///
+				p.x=t.read("x");			///
+				p.send();					///
+			})								///
+		})									+++
+	});										+++
+	return (pong)this;						+++
+}											+++	
+
+def main(){									+++
+	var e = engine();						+++
+	var a_tsk = create_tsk(e);				+++
+	e.connect();							+++
+	var a_ping = create_ping(e);			///
+	var a_pong = create_pong(e);			///
+	a_pong.p(a_ping.p);						///	
+	e.run();								+++	
+}											+++
+
