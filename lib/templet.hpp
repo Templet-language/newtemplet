@@ -31,7 +31,6 @@ namespace TEMPLET{
 	inline void delay(actor*, double);
 	inline double time(actor*);
 
-
 	inline void init(message*, actor*, engine*, void(*save)(message*,saver*)=0, void(*restore)(message*, restorer*)=0);
 	inline void send(message*, actor*,int tag);
 	inline bool access(message*, actor*);
@@ -65,7 +64,7 @@ namespace TEMPLET {
 	};
 }
 
-#if defined(DEBUG_EXECUTION) || (!defined(SERIAL_EXECUTION) && !defined(PARALLEL_EXECUTION) && !defined(SIMULATED_EXECUTION) && !defined(DISTRIBUTED_EXECUTION))
+#if defined(DEBUG_EXECUTION) || (!defined(SERIAL_EXECUTION) && !defined(PARALLEL_EXECUTION) && !defined(SIMULATED_EXECUTION) && !defined(DISTRIBUTED_EXECUTION) && !defined(EVEREST_EXECUTION))
 
 #ifndef DEBUG_EXECUTION
 #define DEBUG_EXECUTION
@@ -919,6 +918,90 @@ namespace TEMPLET{
 
 	inline bool stat(void*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp){ return false; }
 	inline bool stat(engine*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp){ return false; }
+}
+#elif defined(EVEREST_EXECUTION)
+
+#include <queue>
+
+namespace TEMPLET {
+
+	struct actor {
+		void(*_recv)(actor*, message*, int tag);
+		engine* _engine;
+	};
+
+	struct message {
+		actor* _actor;
+		bool _sending;
+		int _tag;
+	};
+
+	struct engine {
+		std::queue<message*> _ready;
+		bool _stop;
+	};
+
+	class everest {///???
+
+	};
+
+	class task {//???
+
+	};
+
+	inline void init(actor*a, engine*e, void(*recv)(actor*, message*, int tag), void(*save)(actor*, saver*), void(*restore)(actor*, restorer*))
+	{
+		a->_recv = recv; a->_engine = e;
+	}
+
+	inline bool at(actor*, int node) { return false; }
+	inline void stop(actor*a) { a->_engine->_stop = true; }
+	inline void delay(actor*, double) {}
+	inline double time(actor*) { return 0.0; }
+
+	inline void init(message*m, actor*a, engine*e, void(*save)(message*, saver*), void(*restore)(message*, restorer*))
+	{
+		m->_sending = false; m->_actor = a; m->_tag = 0;
+	}
+
+	inline void send(message*m, actor*a, int tag)
+	{
+		if (m->_sending) return;
+		engine* e = a->_engine;
+
+		m->_sending = true;
+		m->_actor = a;
+		m->_tag = tag;
+		e->_ready.push(m);
+	}
+
+	inline bool access(message*m, actor*a)
+	{
+		return m->_actor == a && !m->_sending;
+	}
+
+	inline void init(engine*e, int argc, char *argv[])
+	{
+		while (!e->_ready.empty())e->_ready.pop();
+		e->_stop = false;
+	}
+
+	inline int  nodes(engine*) { return 1; }
+	inline void map(engine*) {}
+
+	inline void run(engine*e)
+	{
+		while (!e->_ready.empty()) {
+			message*m = e->_ready.front(); e->_ready.pop();
+			actor*a = m->_actor;
+			m->_sending = false;
+			a->_recv(a, m, m->_tag);
+			if (e->_stop) break;
+		}
+	}
+
+	inline bool stat(void*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp) { return false; }
+	inline bool stat(engine*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp) { return false; }
 }
 #endif
 
