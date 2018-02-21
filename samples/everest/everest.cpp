@@ -1,6 +1,6 @@
 /*$TET$actor*/
 /*--------------------------------------------------------------------------*/
-/*  Copyright 2016 Sergei Vostokin                                          */
+/*  Copyright 2018 Sergei Vostokin                                          */
 /*                                                                          */
 /*  Licensed under the Apache License, Version 2.0 (the "License");         */
 /*  you may not use this file except in compliance with the License.        */
@@ -17,7 +17,7 @@
 
 #include <iostream>
 
-#define EVEREST_EXECUTION
+#define SOA_EXECUTION
 #include <templet.hpp>
 
 using namespace std;
