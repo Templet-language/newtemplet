@@ -56,9 +56,14 @@ const int BLOCK_SIZE = 1000000;
 
 int block_array[NUM_BLOCKS*BLOCK_SIZE];
 
+int num_of_block_sort = 0;
+int num_of_block_merge = 0;
+
 void block_sort(int block_num)
 {
 	std::sort(&block_array[block_num*BLOCK_SIZE], &block_array[(block_num+1)*BLOCK_SIZE]);
+
+	num_of_block_sort++;
 }
 
 void block_merge(int less_block_num, int more_block_num)
@@ -77,6 +82,8 @@ void block_merge(int less_block_num, int more_block_num)
 	std::copy(&tmp_array[BLOCK_SIZE], &tmp_array[2*BLOCK_SIZE], &block_array[more_block_num*BLOCK_SIZE]);
 
 	free(tmp_array);
+
+	num_of_block_merge++;
 }
 
 bool is_sorted()
@@ -160,7 +167,7 @@ struct sorter : actor{
 		double time;
 		time = omp_get_wtime();
 #endif
-		block_sort(i);  // <-- code fragment 2
+		block_sort(i); 
 #if defined(SIMULATED_EXECUTION)
 		time = omp_get_wtime() - time;
 		delay(time*(1+TRADEOFF));
@@ -277,7 +284,7 @@ struct merger : actor{
 
 /*$TET$merger$$code&data*/
 	void merge(){
-		if (!(access(_in) && access(out)))return;        // <-- code fragment 3 begin
+		if (!(access(_in) && access(out)))return;       
 
 		if(is_first){
 			is_first=false;	j = _in->i;
@@ -295,7 +302,7 @@ struct merger : actor{
 #endif
 			out.i = _in->i;
 			_in->send();out.send();
-		}                                                // <-- code fragment 3 end
+		}                                              
 	}
 
 	int  j;
@@ -354,7 +361,7 @@ int main(int argc, char *argv[])
 	srand(1); for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++)	block_array[i] = rand();
 	
 	double time = omp_get_wtime();
-	std::sort(&block_array[0], &block_array[NUM_BLOCKS*BLOCK_SIZE]);                  // <-- code fragment 0
+	std::sort(&block_array[0], &block_array[NUM_BLOCKS*BLOCK_SIZE]);                
 	time = omp_get_wtime() - time;
 
 	std::cout << "\nSequential sort time is " << time << " sec\n";
@@ -364,8 +371,8 @@ int main(int argc, char *argv[])
 	
 	time = omp_get_wtime();
 
-	for (int i = 0; i<NUM_BLOCKS; i++) block_sort(i);                                 // <-- code fragment 1
-	for (int i = 1; i<NUM_BLOCKS; i++) for (int j = 0; j<i; j++) block_merge(j, i);   //
+	for (int i = 0; i<NUM_BLOCKS; i++) block_sort(i);                                 
+	for (int i = 1; i<NUM_BLOCKS; i++) for (int j = 0; j<i; j++) block_merge(j, i);   
 	
 	time = omp_get_wtime() - time;
 
@@ -396,6 +403,9 @@ int main(int argc, char *argv[])
 
 	srand(1); for (int i = 0; i < NUM_BLOCKS*BLOCK_SIZE; i++)	block_array[i] = rand();
 	
+	num_of_block_sort = 0;
+	num_of_block_merge = 0;
+
 	time = omp_get_wtime();
 	e.run();
 	time = omp_get_wtime() - time;
@@ -409,6 +419,9 @@ int main(int argc, char *argv[])
 	double Smax;
 	int P=1;
 	double Sp;
+	
+	std::cout << "num_of_block_sort = " << num_of_block_sort << "  num_of_block_merge = " << num_of_block_merge << " total tasks = " <<
+		num_of_block_sort + num_of_block_merge << "\n";
 
 	if (TEMPLET::stat(&e, &T1, &Tp, &Pmax, &Smax, P, &Sp)) {
 		std::cout << "\nSimulated sequential time = " << T1 / (1 + TRADEOFF) << " sec\n"
