@@ -1,5 +1,4 @@
 /*$TET$taskbag*/
-#include <templet.hpp>
 // TODO: place additional headers and other stuff here
 /*$TET$*/
 
@@ -18,7 +17,7 @@ struct result{
 };
 
 struct bag{
-	bag(int argc, char *argv[], int P=0);
+	bag(int num_procs=0);
 	void run();
 	void delay(double);
 	double time();

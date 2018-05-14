@@ -62,6 +62,8 @@ namespace TEMPLET {
 		void at(int) {} 
 		void stop() {} 
 	};
+
+	bool stat(engine_interface*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp);
 }
 
 #if defined(DEBUG_EXECUTION) || (!defined(SERIAL_EXECUTION) && !defined(PARALLEL_EXECUTION) && !defined(SIMULATED_EXECUTION) && !defined(DISTRIBUTED_EXECUTION) && !defined(EVEREST_EXECUTION))

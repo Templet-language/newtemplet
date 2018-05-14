@@ -17,19 +17,19 @@
 #include <iostream>
 #include <omp.h>
 
-#include <templet.hpp>
+//#define SIMULATED_EXECUTION
+#define PARALLEL_EXECUTION
 
 // параллельное умножение матриц
 // с использованием портфеля задач
+// в общей памяти
 
-const int P = 10; // число рабочих процессов (используется только для прогноза ускорения)
+const int P = 10;// используется с #define SIMULATED_EXECUTION
 const int N = 1000;
 double A[N][N], B[N][N], C[N][N];
 
 using namespace std;
 /*$TET$*/
-
-using namespace TEMPLET;
 
 struct task{
 /*$TET$task$data*/
@@ -44,7 +44,7 @@ struct result{
 };
 
 struct bag{
-	bag(int argc, char *argv[], int P=0);
+	bag(int num_procs=0);
 	void run();
 	void delay(double);
 	double time();
@@ -85,7 +85,12 @@ void proc(task*t,result*r)
 /*$TET$footer*/
 int main(int argc, char* argv[])
 {
-	bag b(argc, argv, P);
+#ifdef SIMULATED_EXECUTION
+	bag b(P);
+#else
+	bag b;
+#endif
+
 	b.cur = 0; // начинаем вычисление с нулевой строки
 
 	// инициализация матриц
@@ -115,7 +120,7 @@ int main(int argc, char* argv[])
 	
 	// узнаём прогноз ускорения алгоритма (Smax), если накладные расходы составляют 10% от времени вычисления 
 	double Smax;
-	if ((Smax = b.speedup())>0.0) std::cout << "Smax = " << Smax << " (if use " << P << " workers)";
+	if ((Smax = b.speedup())>0.0) std::cout << "Smax = " << Smax << " for "<< P << " processors" << '\n';
 
 	return EXIT_SUCCESS;
 }

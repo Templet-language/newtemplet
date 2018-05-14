@@ -1,11 +1,9 @@
 /*$TET$taskbag*/
-#include <templet.hpp>
 /*$TET$*/
-#include <queue>
 
-#ifndef TET_MPI_EXEC
-#include <thread>
-#endif
+#define USE_OPENMP
+#include <templet.hpp>
+#include <queue>
 
 using namespace std;
 using namespace TEMPLET;
@@ -39,7 +37,7 @@ struct worker;
 
 struct bag : actor{
 
-	bag(int argc, char *argv[], int nproc = 0);
+	bag(int num_procs=0);
 	~bag();
 	void delay(double t){ TEMPLET::delay(this,t); }
 	double time(){ return TEMPLET::time(this); }
@@ -122,18 +120,14 @@ public:
 	bool _init;
 };
 
-inline bag::bag(int argc, char *argv[], int nproc) {
-	::init(&_engine, argc, argv);
+inline bag::bag(int num_procs) {
+	::init(&_engine, 0, 0);
 	::init(this, &_engine, recv_master);
 
-	if (nproc) _nworkers = nproc;
-	else{
-#ifdef TET_MPI_EXEC
-		_nworkers = ::nodes(this);
-#else 
-		_nworkers = std::thread::hardware_concurrency();
-#endif
-	}
+	if (num_procs == 0) 
+		_nworkers = omp_get_num_procs();
+	else
+		_nworkers = num_procs;
 
 	_messages = new task_result*[_nworkers];
 	_workers = new worker*[_nworkers];
@@ -142,11 +136,6 @@ inline bag::bag(int argc, char *argv[], int nproc) {
 		_workers[i] = new worker(&_engine,this);
 		_messages[i] = new task_result(&_engine,this,_workers[i]);
 	}
-
-#ifdef TET_MPI_EXEC
-	::at(this, 0);
-	for (int i = 0; i < _nworkers; i++)	::at(_workers[i], i);
-#endif
 
 	for (int i = 0; i < _nworkers; i++)_messages[i]->call();
 	_active = _nworkers;
