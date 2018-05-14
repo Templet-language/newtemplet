@@ -1,1 +1,1 @@
-"../../bin/skel" -i taskbag.cpp -s taskbag.dsg.cpp
+"../../bin/skel" -i taskbag.cpp -s ../../lib/taskbag.dsg.cpp
