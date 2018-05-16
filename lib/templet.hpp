@@ -18,6 +18,8 @@
 
 namespace TEMPLET{
 
+#include <cstddef>
+
 	struct actor;
 	struct message;
 	struct engine;
@@ -156,7 +158,7 @@ namespace TEMPLET{
 
 	inline bool access(message*m, actor*a)
 	{
-		return m->_actor == a && !m->_sending;
+		return m && m->_actor == a && !m->_sending;
 	}
 
 	inline void init_buffer(engine*e);
@@ -256,7 +258,7 @@ namespace TEMPLET{
 
 	inline bool access(message*m, actor*a)
 	{
-		return m->_actor == a && !m->_sending;
+		return m && m->_actor == a && !m->_sending;
 	}
 
 	inline void init(engine*e, int argc, char *argv[])
@@ -388,7 +390,7 @@ namespace TEMPLET{
 
 	inline bool access(message*m, actor*a)
 	{
-		return m->_actor == a && !m->_sending;
+		return m && m->_actor == a && !m->_sending;
 	}
 
 	inline void init(engine*e, int argc, char *argv[])
@@ -531,7 +533,7 @@ namespace TEMPLET{
 
 	inline bool access(message*m, actor*a)
 	{
-		return m->_actor == a && !m->_sending;
+		return m && m->_actor == a && !m->_sending;
 	}
 
 	inline void init(engine*e, int argc, char *argv[])
@@ -715,7 +717,7 @@ namespace TEMPLET{
 
 	inline bool access(message*m, actor*a)
 	{
-		return m->_actor == a && !m->_sending;
+		return m && m->_actor == a && !m->_sending;
 	}
 
 	inline void init_buffer(engine*e);
@@ -979,7 +981,7 @@ namespace TEMPLET {
 
 	inline bool access(message*m, actor*a)
 	{
-		return m->_actor == a && !m->_sending;
+		return m && m->_actor == a && !m->_sending;
 	}
 
 	inline void init(engine*e, int argc, char *argv[])
