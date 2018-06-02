@@ -16,9 +16,9 @@
 
 #pragma once
 
-namespace TEMPLET{
-
 #include <cstddef>
+
+namespace TEMPLET{
 
 	struct actor;
 	struct message;
@@ -43,7 +43,7 @@ namespace TEMPLET{
 	inline void run(engine*);
 	inline bool stat(engine*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp);
 
-	inline void save(saver*, void*, size_t);
+	inline void save(saver*, const void*, size_t);
 	inline void restore(restorer*, void*, size_t);
 }
 
@@ -821,7 +821,9 @@ namespace TEMPLET{
 	inline int num_of_actors_with_rank(engine*e,int rank)
 	{
 		int num = 0;
-		for (actor*a : e->_actors)	if (a->_mpi_rank == rank) num++;
+		//for (actor*a : e->_actors)	if (a->_mpi_rank == rank) num++;
+		for(std::vector<actor*>::iterator it=e->_actors.begin();
+		    it!=e->_actors.end();it++) if ((*it)->_mpi_rank == rank) num++;
 		return num;
 	}
 
@@ -867,10 +869,14 @@ namespace TEMPLET{
 			}
 		}
 
-		for (actor*a : e->_actors)
-			if (a->_mpi_rank == e->_mpi_rank)
-				send_actor(a, MASTER);
-
+		//for (actor*a : e->_actors)
+		//	if (a->_mpi_rank == e->_mpi_rank)
+		//		send_actor(a, MASTER);
+				
+        for(std::vector<actor*>::iterator it=e->_actors.begin();
+		    it!=e->_actors.end();it++) 	if ((*it)->_mpi_rank == e->_mpi_rank)
+				send_actor((*it), MASTER);
+		
 		MPI_Finalize();
 		exit(0);
 	}
@@ -881,9 +887,13 @@ namespace TEMPLET{
 		MPI_Status status;
 		e->_running = true;
 		
-		for (actor*a : e->_actors)
-			if (a->_mpi_rank != MASTER)
-				send_actor(a, a->_mpi_rank);
+		//for (actor*a : e->_actors)
+		//	if (a->_mpi_rank != MASTER)
+		//		send_actor(a, a->_mpi_rank);
+				
+		for(std::vector<actor*>::iterator it=e->_actors.begin();
+		    it!=e->_actors.end();it++) if ((*it)->_mpi_rank != MASTER)
+				send_actor((*it), (*it)->_mpi_rank);		
 			
 		for (;;){
 			if (!e->_ready.empty()){
@@ -1022,7 +1032,7 @@ namespace TEMPLET{
 		e->_restorer._engine = e;
 	}
 
-	inline void save(saver*s, void*source, size_t size)
+	inline void save(saver*s, const void*source, size_t size)
 	{
 		engine* e = s->_engine;
 		if (e->_buffer_size < size + e->_buffer_cursor){
@@ -1045,8 +1055,7 @@ namespace TEMPLET{
 #else
 namespace TEMPLET{
 	inline void init_buffer(engine*e){}
-	inline void save(saver*, void*, size_t){}
+	inline void save(saver*, const void*, size_t){}
 	inline void restore(restorer*, void*, size_t){}
 }
 #endif
-

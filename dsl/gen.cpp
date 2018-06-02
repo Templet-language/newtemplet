@@ -337,10 +337,10 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			outf << endl;
 
 			outf << "\tstatic void "<<m.name<<"_save_adapter(message*m, saver*s){\n"
-				"\t\t((value_message*)m)->save(s);\n"
+				"\t\t(("<< m.name <<"*)m)->save(s);\n"
 				"\t}\n\n"
 				"\tstatic void "<<m.name<<"_restore_adapter(message*m, restorer*r){\n"
-				"\t\t((value_message*)m)->restore(r);\n"
+				"\t\t(("<< m.name <<"*)m)->restore(r);\n"
 				"\t}\n";
 		}
 
