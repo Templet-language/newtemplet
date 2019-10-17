@@ -10,8 +10,8 @@ using namespace std;
 using TEMPLET::taskengine;
 using TEMPLET::task;
 
-const double _sin2_duration = 1.0;
-const double _cos2_duration = 1.0;
+const double _sin2_duration = 4.0;
+const double _cos2_duration = 2.0;
 const double _sum_duration = 1.0;
 
 int main()
@@ -24,13 +24,18 @@ int main()
 
 	double x = 123.456, _sin2 = 0.0, _cos2 = 0.0;
 
-	do_sin_2.submit([x, &_sin2, &eng]() {_sin2 = sin(x)*sin(x); eng.delay(_sin2_duration); });
-	do_cos_2.submit([x, &_cos2, &eng]() {_cos2 = cos(x)*cos(x); eng.delay(_cos2_duration); });
+	do_sin_2.submit([x, &_sin2, &eng]() {
+		_sin2 = sin(x)*sin(x); eng.delay(_sin2_duration); 
+	});
+	do_cos_2.submit([x, &_cos2, &eng]() {
+		_cos2 = cos(x)*cos(x); eng.delay(_cos2_duration); 
+	});
 
 	eng.wait_for(do_sin_2);
 	eng.wait_for(do_cos_2);
 
-	do_sum.submit([&]() { cout << "sin2("<<x<<") + cos2("<<x<<") = " << _sin2 + _cos2 << endl;
+	do_sum.submit([&]() { 
+		cout << "sin2("<<x<<") + cos2("<<x<<") = " << _sin2 + _cos2 << endl;
 		eng.delay(_sum_duration);
 	});
 
