@@ -1,3 +1,4 @@
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/Templet-language/newtemplet.git/master)
 What is it?
 -----------
 Templet is a markup language for actor-oriented programming. Actors are basically concurrent processes that communicate by exchanging messages. With Templet you can compose programs in the form of actors network. This point of view gives advantages, if application areas are highly-parallel by its nature: multi-core programming, high performance computing, industrial control systems, Internet of Things, business process management, and many others.
