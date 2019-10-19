@@ -68,7 +68,7 @@ namespace TEMPLET {
 	bool stat(engine_interface*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp);
 }
 
-#if defined(DEBUG_EXECUTION) || (!defined(SERIAL_EXECUTION) && !defined(PARALLEL_EXECUTION) && !defined(SIMULATED_EXECUTION) && !defined(DISTRIBUTED_EXECUTION) && !defined(EVEREST_EXECUTION))
+#if defined(DEBUG_EXECUTION) || (!defined(SERIAL_EXECUTION) && !defined(PARALLEL_EXECUTION) && !defined(SIMULATED_EXECUTION) && !defined(MPI_EXECUTION) && !defined(EVEREST_EXECUTION))
 
 #ifndef DEBUG_EXECUTION
 #define DEBUG_EXECUTION
@@ -617,7 +617,7 @@ namespace TEMPLET{
 		return true;
 	}
 }
-#elif defined(DISTRIBUTED_EXECUTION)
+#elif defined(MPI_EXECUTION)
 
 #include <mpi.h>
 #include <assert.h>
@@ -937,6 +937,8 @@ namespace TEMPLET{
 
 #include <queue>
 
+#include <taskemul.hpp>
+
 namespace TEMPLET {
 
 	struct actor {
@@ -953,14 +955,7 @@ namespace TEMPLET {
 	struct engine {
 		std::queue<message*> _ready;
 		bool _stop;
-	};
-
-	class everest {///???
-
-	};
-
-	class task {//???
-
+		taskengine _teng;
 	};
 
 	inline void init(actor*a, engine*e, void(*recv)(actor*, message*, int tag), void(*save)(actor*, saver*), void(*restore)(actor*, restorer*))
@@ -1002,7 +997,7 @@ namespace TEMPLET {
 
 	inline int  nodes(engine*) { return 1; }
 	inline void map(engine*) {}
-
+/////////////////////////////////////////////////////////
 	inline void run(engine*e)
 	{
 		while (!e->_ready.empty()) {
@@ -1013,7 +1008,7 @@ namespace TEMPLET {
 			if (e->_stop) break;
 		}
 	}
-
+////////////////////////////////////////////////////////
 	inline bool stat(void*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp) { return false; }
 	inline bool stat(engine*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp) { return false; }
 }

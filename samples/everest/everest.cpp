@@ -17,7 +17,7 @@
 
 #include <iostream>
 
-#define SOA_EXECUTION
+#define EVEREST_EXECUTION
 #include <templet.hpp>
 
 using namespace std;
