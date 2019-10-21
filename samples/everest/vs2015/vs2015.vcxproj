@@ -21,6 +21,10 @@
   <ItemGroup>
     <ClCompile Include="..\everest.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\lib\taskemul.hpp" />
+    <ClInclude Include="..\..\..\lib\templet.hpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{964E2423-2196-4A6D-B359-DA7B099BBB7D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>

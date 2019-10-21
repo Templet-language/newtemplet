@@ -42,6 +42,16 @@ namespace TEMPLET {
 			}
 			assert(--_recount == 0);
 		}
+
+		task& wait_some(){
+			assert(++_recount == 1);
+			while (!_calendar.empty()) {
+				event ev = _calendar.top();	_calendar.pop();
+				_wait_loop_body(ev);
+				if (ev._type == event::TASK_END) return *ev._task;
+			}
+			assert(--_recount == 0);
+		}
 		
 		void delay(double t) { assert(_task_mode); _cur_delay += t;	_T1 += t; }
 
@@ -71,30 +81,24 @@ namespace TEMPLET {
 	class task {
 		friend	class taskengine;
 	public:
-		task(taskengine&e):_eng(e), _is_idle(true){}
+		task(taskengine&e) :_eng(e), _is_idle(true), _on_start([](){}), _on_ready([](){}) {}
 
-		virtual void on_start() {}
-		virtual void on_ready() {}
+		void set_on_start(std::function<void(void)> callee) { _on_start = callee; }
+		void set_on_ready(std::function<void(void)> callee) { _on_ready = callee; }
 		
-		void   delay(double t) { _eng.delay(t);	}
+		void delay(double t) { _eng.delay(t); }
 		
-		void submit() {
-			_on_start = [this]() {this->on_start(); };
-			_on_ready = [this]() {this->on_ready(); };
+		void submit() {	_eng.submit(*this);	}
 
-			_eng.submit(*this);
+		void submit(std::function<void(void)> on_start) {
+			_on_start = on_start; _eng.submit(*this);
 		}
 
-		void submit(std::function<void(void)> on_start, std::function<void(void)> on_ready = []() {}) {
-			_on_start = on_start;
-			_on_ready = on_ready;
-
-			_eng.submit(*this);
+		void submit(std::function<void(void)> on_start, std::function<void(void)> on_ready ) {
+			_on_start = on_start; _on_ready = on_ready; _eng.submit(*this);
 		}
 
-		bool is_idle() {
-			return _eng.is_idle(*this);
-		}
+		bool is_idle() { return _eng.is_idle(*this); }
 
 	private:
 		std::function<void(void)> _on_start;
@@ -109,7 +113,7 @@ namespace TEMPLET {
 		while (!_calendar.empty()) { 
 			_calendar.top()._task->_is_idle = true;
 			_calendar.pop(); 
-}
+		}
 	}
 
 	void taskengine::submit(task&t) {

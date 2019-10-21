@@ -18,6 +18,12 @@
 
 #include <cstddef>
 
+#ifdef USE_TASK_EMUL
+#include <taskemul.hpp>
+#else
+	//////////
+#endif
+
 namespace TEMPLET{
 
 	struct actor;
@@ -52,6 +58,12 @@ namespace TEMPLET {
 		engine_interface(int argc, char *argv[]) {}
 		void run() {}
 		void map() {}
+#ifdef USE_TASK_EMUL		
+		void set_task_engine(taskengine&) {} 
+		void set_task_engine(taskengine*) {}
+#else
+	//////////////
+#endif	
 	};
 
 	struct message_interface { void send() {} };
@@ -63,6 +75,8 @@ namespace TEMPLET {
 		double time() { return 0; }
 		void at(int) {} 
 		void stop() {} 
+		void suspend() {} 
+		void resume() {}
 	};
 
 	bool stat(engine_interface*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp);
@@ -937,36 +951,57 @@ namespace TEMPLET{
 
 #include <queue>
 
-#include <taskemul.hpp>
-
 namespace TEMPLET {
 
 	struct actor {
 		void(*_recv)(actor*, message*, int tag);
 		engine* _engine;
+		std::queue<message*> _queue;
+		bool _suspended;
+		void suspend();
+		void resume();
 	};
 
 	struct message {
 		actor* _actor;
 		bool _sending;
-		int _tag;
+		int  _tag;
 	};
 
 	struct engine {
 		std::queue<message*> _ready;
 		bool _stop;
-		taskengine _teng;
-	};
+		int  _suspended_num;
+#ifdef USE_TASK_EMUL
+		taskengine* _teng;
+#else 
+	 // etaskengine _teng;
+#endif
+		void set_task_engine(taskengine&e) { _teng = &e; };
+		void set_task_engine(taskengine*e) { _teng = e; };
+};
 
 	inline void init(actor*a, engine*e, void(*recv)(actor*, message*, int tag), void(*save)(actor*, saver*), void(*restore)(actor*, restorer*))
 	{
 		a->_recv = recv; a->_engine = e;
+		a->_suspended = false;
 	}
 
 	inline bool at(actor*, int node) { return false; }
 	inline void stop(actor*a) { a->_engine->_stop = true; }
 	inline void delay(actor*, double) {}
 	inline double time(actor*) { return 0.0; }
+
+	inline void actor::suspend() { _suspended = true; _engine->_suspended_num++; }
+
+	inline void actor::resume() {
+		_suspended = false;
+		while (!_queue.empty()) {
+			message*m = _queue.front(); _queue.pop();
+			_engine->_ready.push(m);
+		}
+		_engine->_suspended_num--;
+	}
 
 	inline void init(message*m, actor*a, engine*e, void(*save)(message*, saver*), void(*restore)(message*, restorer*))
 	{
@@ -993,22 +1028,32 @@ namespace TEMPLET {
 	{
 		while (!e->_ready.empty())e->_ready.pop();
 		e->_stop = false;
+		e->_suspended_num = 0;
 	}
 
 	inline int  nodes(engine*) { return 1; }
 	inline void map(engine*) {}
-/////////////////////////////////////////////////////////
+
 	inline void run(engine*e)
 	{
-		while (!e->_ready.empty()) {
-			message*m = e->_ready.front(); e->_ready.pop();
-			actor*a = m->_actor;
-			m->_sending = false;
-			a->_recv(a, m, m->_tag);
-			if (e->_stop) break;
-		}
+		do {
+			while (!e->_ready.empty()) {
+				message*m = e->_ready.front(); e->_ready.pop();
+				actor*a = m->_actor;
+
+				if (!a->_suspended) {
+					m->_sending = false;
+					a->_recv(a, m, m->_tag);
+				}
+				else a->_queue.push(m);
+
+				if (e->_stop) return;
+			}
+			if (e->_suspended_num) e->_teng->wait_some();
+
+		} while (!e->_ready.empty() || e->_suspended_num != 0);
 	}
-////////////////////////////////////////////////////////
+
 	inline bool stat(void*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp) { return false; }
 	inline bool stat(engine*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp) { return false; }
 }
