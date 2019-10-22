@@ -38,7 +38,7 @@ struct message{
 struct port{
   string name;
   string message_name;
-  enum {SERVER,CLIENT} type;
+  enum {SERVER,CLIENT,TASK} type;
 };
 
 struct actor{
@@ -130,6 +130,7 @@ bool parse_actor(int line, actor& a)
 
 			if (getlex(lex) && lex == "?"){ p.type = port::SERVER; }
 			else if (ungetlex() && getlex(lex) && lex == "!"){ p.type = port::CLIENT; }
+			else if (ungetlex() && getlex(lex) && lex == ".") { p.type = port::TASK; }
 			else error(line);
 
 			if (!(getlex(lex) && is_id(lex))) error(line);
@@ -180,6 +181,7 @@ void print_actor(ostream&s,actor&a)
 			s << x.name;
 			if (x.type == port::CLIENT) s << "!";
 			else if (x.type == port::SERVER) s << "?";
+			else if (x.type == port::TASK) s << ".";
 			s << x.message_name;
 
 			comma = true;
@@ -421,7 +423,7 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
 			port& x = *it;
 			
-			if (x.type == port::CLIENT) { have_client_ports = true; break; };
+			if (x.type == port::CLIENT || x.type == port::TASK) { have_client_ports = true; break; };
 		}
 
 		if (!have_client_ports)
@@ -435,6 +437,10 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 					if (first)first = false; else outf << ",";
 					outf << x.name << "(this, &e, TAG_" << x.name << ")";
 				};
+				if (x.type == port::TASK) {
+					if (first)first = false; else outf << ",";
+					outf << x.name << "(*(e._teng))";
+				}
 			}
 			outf << "{\n";
 		}
@@ -445,6 +451,13 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		if (a.initially_active){
 			outf << "\t\t::init(&_start, this, &e);\n"
 				"\t\t::send(&_start, this, START);\n";
+		}
+
+		for (std::list<port>::iterator it1 = a.ports.begin(); it1 != a.ports.end(); it1++) {
+			port& x = *it1;
+			if (x.type == port::TASK) {
+				outf << "\t\t" << x.name << ".set_on_ready([&]() { " << x.name <<  "_handler(" << x.name << "); resume(); });\n";
+			}
 		}
 
 		outf <<
@@ -480,6 +493,10 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 				outf << "\t" << p.message_name << " " << p.name << ";\n";
 			else if (p.type == port::SERVER)
 				outf << "\tvoid " << p.name << "(" << p.message_name << "&m){m._server_id=TAG_"<<p.name<<"; m._srv=this;}\n";
+			else if (p.type == port::TASK) {
+				outf << "\t" << p.message_name << " " << p.name << ";\n";
+				outf << "\t" << "void " << p.name << "_submit() { "<< p.name <<".submit(); suspend(); }" << ";\n";
+			}
 		}
 
 		outf << endl;
@@ -489,8 +506,8 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 
 		for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
 			port& p = *it;
-
-			outf << "\t\t\tcase TAG_" << p.name << ": ((" << a.name << "*)a)->" << p.name << "_handler(*((" << p.message_name << "*)m)); break;\n";
+			if(p.type != port::TASK)
+				outf << "\t\t\tcase TAG_" << p.name << ": ((" << a.name << "*)a)->" << p.name << "_handler(*((" << p.message_name << "*)m)); break;\n";
 		}
 
 		if (a.initially_active) outf << "\t\t\tcase START: (("<< a.name <<"*)a)->start(); break;\n";

@@ -43,13 +43,15 @@ namespace TEMPLET {
 			assert(--_recount == 0);
 		}
 
-		task& wait_some(){
+		task* wait_some(){
 			assert(++_recount == 1);
+			event ev; ev._task = 0;
 			while (!_calendar.empty()) {
-				event ev = _calendar.top();	_calendar.pop();
+				ev = _calendar.top();	_calendar.pop();
 				_wait_loop_body(ev);
-				if (ev._type == event::TASK_END) return *ev._task;
+				if (ev._type == event::TASK_END) break;
 			}
+			return ev._task;
 			assert(--_recount == 0);
 		}
 		

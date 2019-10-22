@@ -79,13 +79,14 @@ struct ping : actor{
 	message _start;
 };
 
-#pragma templet *pong(p?mes)
+#pragma templet *pong(p?mes,tsk.task)
 
 struct pong : actor{
-	enum tag{START,TAG_p};
+	enum tag{START,TAG_p,TAG_tsk};
 
-	pong(my_engine&e){
+	pong(my_engine&e):tsk(*(e._teng)){
 		::init(this, &e, pong_recv_adapter);
+		tsk.set_on_ready([&]() { tsk_handler(tsk); resume(); });
 /*$TET$pong$pong*/
 /*$TET$*/
 	}
@@ -99,6 +100,8 @@ struct pong : actor{
 	void stop(){ TEMPLET::stop(this); }
 
 	void p(mes&m){m._server_id=TAG_p; m._srv=this;}
+	task tsk;
+	void tsk_submit() { tsk.submit(); suspend(); };
 
 	static void pong_recv_adapter (actor*a, message*m, int tag){
 		switch(tag){
@@ -108,6 +111,11 @@ struct pong : actor{
 
 	void p_handler(mes&m){
 /*$TET$pong$p*/
+/*$TET$*/
+	}
+
+	void tsk_handler(task&m){
+/*$TET$pong$tsk*/
 /*$TET$*/
 	}
 
