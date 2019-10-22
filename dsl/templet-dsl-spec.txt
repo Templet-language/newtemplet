@@ -72,9 +72,9 @@ The Actor Syntax
 
 EBNF-based syntax of the actor class:
 
-/*----------------------------------------------------------------------------------------------*/
-/*    #pragma templet '*' id ['$'] [ '(' id ('!'|'?') id) {',' id ('!'|'?') id)} ')' ] ['+']    */
-/*----------------------------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------------------------------------*/
+/*    #pragma templet '*' id ['$'] [ '(' id ('!'|'?'|'.') id) {',' id ('!'|'?'|'.') id)} ')' ] ['+']    */
+/*------------------------------------------------------------------------------------------------------*/
 
 the meaning of the syntax:
 
@@ -135,7 +135,7 @@ struct actor : actor_interface{
 
 struct actor : actor_interface{
 	// in addition to the other actors properties
-	// you have one build-in and one user-defined method for every 'port?message' :
+	// you have a build-in and a user-defined method for every 'port?message' :
 
 	void port(message&); // use this method to bind some messages to the port,
 
@@ -150,7 +150,7 @@ struct actor : actor_interface{
 
 struct actor : actor_interface{
     // in addition to the other actors properties
-	// you have build-in method and user-defined method for every 'port!message':
+	// you have a build-in field and a user-defined method for every 'port!message':
 
 	message port; // use this field to get a message bound to the port
 
@@ -160,6 +160,18 @@ struct actor : actor_interface{
 	}
 };
 
+// define a task to run in the context of the actor
+#pragma templet *actor(task.tasktype)
+
+struct actor : actor_interface{
+    // in addition to the other actors properties
+	// you have build-in method and a field for every 'task.tasktype':
+
+	tasktype task;
+	void task_submit(){}
+};
+
+
 Actor-Message Binding
 ---------------------
 
@@ -167,8 +179,11 @@ Actor-Message Binding
 class engine_interface{
 public:
 	my_engine(int argc, char *argv[]); // construct the engine (one for MPI apps)
+
 	void run(); // run the actor system connected to the engine
 	void map(); // map actors to MPI processes
+
+        void set_task_engine(taskengine*); // when tasks are in use
 };
 
 int main(int argc, char *argv[])

@@ -35,7 +35,7 @@ struct ping : actor_interface{
 /*$TET$*/
 };
 
-#pragma templet *pong(p?mes)
+#pragma templet *pong(p?mes,tsk.task)
 
 struct pong : actor_interface{
 	pong(engine_interface&){
@@ -44,9 +44,16 @@ struct pong : actor_interface{
 	}
 
 	void p(mes&){}
+	task tsk;
+	void tsk_submit(){}
 
 	void p_handler(mes&m){
 /*$TET$pong$p*/
+/*$TET$*/
+	}
+
+	void tsk_handler(task&m){
+/*$TET$pong$tsk*/
 /*$TET$*/
 	}
 

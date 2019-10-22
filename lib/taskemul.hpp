@@ -51,8 +51,8 @@ namespace TEMPLET {
 				_wait_loop_body(ev);
 				if (ev._type == event::TASK_END) break;
 			}
-			return ev._task;
 			assert(--_recount == 0);
+			return ev._task;
 		}
 		
 		void delay(double t) { assert(_task_mode); _cur_delay += t;	_T1 += t; }
@@ -83,29 +83,30 @@ namespace TEMPLET {
 	class task {
 		friend	class taskengine;
 	public:
-		task(taskengine&e) :_eng(e), _is_idle(true), _on_start([](){}), _on_ready([](){}) {}
+		task() :_eng(0), _is_idle(true), _on_start([]() {}), _on_ready([]() {}) {} // only for compatibility with preprocessor's design mode
+		task(taskengine&e) :_eng(&e), _is_idle(true), _on_start([](){}), _on_ready([](){}) {}
 
 		void set_on_start(std::function<void(void)> callee) { _on_start = callee; }
 		void set_on_ready(std::function<void(void)> callee) { _on_ready = callee; }
 		
-		void delay(double t) { _eng.delay(t); }
+		void delay(double t) { _eng->delay(t); }
 		
-		void submit() {	_eng.submit(*this);	}
+		void submit() {	_eng->submit(*this);	}
 
 		void submit(std::function<void(void)> on_start) {
-			_on_start = on_start; _eng.submit(*this);
+			_on_start = on_start; _eng->submit(*this);
 		}
 
 		void submit(std::function<void(void)> on_start, std::function<void(void)> on_ready ) {
-			_on_start = on_start; _on_ready = on_ready; _eng.submit(*this);
+			_on_start = on_start; _on_ready = on_ready; _eng->submit(*this);
 		}
 
-		bool is_idle() { return _eng.is_idle(*this); }
+		bool is_idle() { return _eng->is_idle(*this); }
 
 	private:
 		std::function<void(void)> _on_start;
 		std::function<void(void)> _on_ready;
-		taskengine& _eng;
+		taskengine* _eng;
 		bool _is_idle;
 	};
 
@@ -119,7 +120,7 @@ namespace TEMPLET {
 	}
 
 	void taskengine::submit(task&t) {
-		assert(&t._eng == this && is_idle(t) && !_task_mode);
+		assert(t._eng == this && is_idle(t) && !_task_mode);
 	
 		event ev;
 		ev._time = _Tp;

@@ -251,6 +251,10 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 				outf << "\t" << p.message_name << " " << p.name << ";\n";
 			else if (p.type == port::SERVER)
 				outf << "\tvoid " << p.name << "(" << p.message_name << "&){}\n";
+			else if (p.type == port::TASK) {
+				outf << "\t" << p.message_name << " " << p.name << ";\n";
+				outf << "\tvoid " << p.name << "_submit(){}\n";
+			}
 		}
 		
 		if (a.initially_active){
