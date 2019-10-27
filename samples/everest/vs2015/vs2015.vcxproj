@@ -22,6 +22,7 @@
     <ClCompile Include="..\everest.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\lib\everest.hpp" />
     <ClInclude Include="..\..\..\lib\taskemul.hpp" />
     <ClInclude Include="..\..\..\lib\templet.hpp" />
   </ItemGroup>
