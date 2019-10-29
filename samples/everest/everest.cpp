@@ -18,7 +18,7 @@
 #include <iostream>
 
 #define EVEREST_EXECUTION
-#define USE_TASK_EMUL
+//#define USE_TASK_EMUL
 #include <templet.hpp>
 
 using namespace std;
@@ -79,10 +79,15 @@ struct pong : actor_interface{
 /*$TET$pong$p*/
 		_p = &m;
 
+#ifdef USE_TASK_EMUL
 		tsk.set_on_start([&]() {
 			cout << m._mes.c_str() << endl;
 			m._mes = "Hello PING!!!";
 		});
+#else
+		json in;
+		tsk.set_in(in);
+#endif
 
 		tsk_submit();
 /*$TET$*/
@@ -103,7 +108,12 @@ int main(int argc, char *argv[])
 {
 	engine_interface e(argc, argv);
 /*$TET$footer*/
+	
+#ifdef USE_TASK_EMUL
 	taskengine eng;
+#else
+	taskengine eng("vostokinsv", "SergeyVostokin");
+#endif
 	e.set_task_engine(eng);
 
 	ping a_ping(e);

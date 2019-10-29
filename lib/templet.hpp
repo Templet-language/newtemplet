@@ -21,7 +21,7 @@
 #ifdef USE_TASK_EMUL
 #include <taskemul.hpp>
 #else
-	//////////
+#include <everest.hpp>
 #endif
 
 namespace TEMPLET{
@@ -58,12 +58,9 @@ namespace TEMPLET {
 		engine_interface(int argc, char *argv[]) {}
 		void run() {}
 		void map() {}
-#ifdef USE_TASK_EMUL		
+		
 		void set_task_engine(taskengine&) {} 
 		void set_task_engine(taskengine*) {}
-#else
-	//////////////
-#endif	
 	};
 
 	struct message_interface { void send() {} };
@@ -972,11 +969,9 @@ namespace TEMPLET {
 		std::queue<message*> _ready;
 		bool _stop;
 		int  _suspended_num;
-#ifdef USE_TASK_EMUL
+
 		taskengine* _teng;
-#else 
-	 // etaskengine _teng;
-#endif
+
 		void set_task_engine(taskengine&e) { _teng = &e; };
 		void set_task_engine(taskengine*e) { _teng = e; };
 };
