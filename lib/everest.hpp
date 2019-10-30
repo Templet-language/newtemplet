@@ -42,7 +42,7 @@ namespace TEMPLET {
 
 	class taskengine {
 	public:
-		taskengine(char*login, char*pass, char* label=0) {
+		taskengine(const char*login, const char*pass, const char* label=0) {
 			_login = login; _pass = pass; _curl = NULL;
 			if (label)_label = label; else _label = "templet-session";
 			init();
@@ -74,6 +74,8 @@ namespace TEMPLET {
 		void submit(task&t);
 		bool is_idle(task&t);
 
+		bool get_app_description(const char* _id);
+
 	private:
 		inline void _wait_loop_body(event&ev);
 		inline bool init();
@@ -85,7 +87,7 @@ namespace TEMPLET {
 		string _label;
 		string _access_token;
 		int    _recount;
-		task*  _cur_task;
+		
 		CURL*  _curl;
 		long   _code;
 		string _response;
@@ -95,15 +97,16 @@ namespace TEMPLET {
 		friend	class taskengine;
 	public:
 		task() :_eng(0), _is_idle(true), _on_ready([]() {}) {} // only for compatibility with preprocessor's design mode
-		task(taskengine&e) :_eng(&e), _is_idle(true), _on_ready([]() {}) {}
 
+		task(taskengine&e,const char* app_id=0) :_eng(&e), _is_idle(true), _on_ready([]() {}), _app_ID(app_id) {}
+		void set_app_id(const char*id) { _app_ID = id; }
 		
-		void get_out(json& out) { out = _output; }
-		void set_on_ready(function<void(void)> callee) { _on_ready = callee; }
-		void set_in(json& in) { _input = in; }
-		void set_app_id(string&id) { _app_ID = id; }
+		json& out() { return _output; }
+		void  in(json&in) { _input = in; }
 
 		void submit() { _eng->submit(*this); }
+		void set_on_ready(function<void(void)> callee) { _on_ready = callee; }
+		
 		void submit(json& in) { _input = in; _eng->submit(*this); }
 
 		void submit(json& in, function<void(void)> on_ready) {
@@ -114,7 +117,7 @@ namespace TEMPLET {
 			_on_ready = on_ready; _eng->submit(*this);
 		}
 
-		bool is_idle() { return _eng->is_idle(*this); }
+		bool is_idle() { return _is_idle; }
 
 	private:
 		json   _input;
@@ -124,6 +127,8 @@ namespace TEMPLET {
 		taskengine* _eng;
 		bool _is_idle;
 	};
+
+	bool taskengine::is_idle(task&t) { return t._is_idle; }
 
 	bool taskengine::init() {
 		curl_global_init(CURL_GLOBAL_ALL);
@@ -196,14 +201,36 @@ namespace TEMPLET {
 		return  _code == 200;
 	}
 
-	void taskengine::submit(task&t) {
-		assert(t._eng == this && is_idle(t));
+	bool taskengine::get_app_description(const char* _id) {
+		string id = _id;
+		if (!_curl) return false;
+
+		string link = EVEREST_URL;
+		link += "/api/apps/search?name=";
+		link += id;
+
+		curl_easy_setopt(_curl, CURLOPT_HTTPGET, 1L);
+		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
+		_response.clear();
+
+		curl_easy_perform(_curl);
+
+		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
+
+		if (_code == 200) {
+			std::cout << _response;
+			return true;
+		}
+
+		return false;
 	}
 
-	bool taskengine::is_idle(task&t) {
-		return t._is_idle;
+	void taskengine::submit(task&t) {
+		assert(t._eng == this && t.is_idle());
+
 	}
 
 	void taskengine::_wait_loop_body(event&ev) {
+
 	}
 }

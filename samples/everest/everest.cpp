@@ -68,6 +68,7 @@ struct pong : actor_interface{
 	pong(engine_interface&){
 /*$TET$pong$pong*/
 		_p = 0;
+		tsk.set_app_id("5cd2ef531000006cfef4ff7a");//init app
 /*$TET$*/
 	}
 
@@ -86,7 +87,7 @@ struct pong : actor_interface{
 		});
 #else
 		json in;
-		tsk.set_in(in);
+		tsk.in(in);
 #endif
 
 		tsk_submit();
@@ -95,6 +96,9 @@ struct pong : actor_interface{
 
 	void tsk_handler(task&m){
 /*$TET$pong$tsk*/
+#ifndef USE_TASK_EMUL
+		cout << m.out().dump();
+#endif
 		_p->send();
 /*$TET$*/
 	}
@@ -115,6 +119,8 @@ int main(int argc, char *argv[])
 	taskengine eng("vostokinsv", "SergeyVostokin");
 #endif
 	e.set_task_engine(eng);
+
+	eng.get_app_description("init");
 
 	ping a_ping(e);
 	pong a_pong(e);
