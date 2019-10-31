@@ -87,7 +87,7 @@ struct pong : actor_interface{
 		});
 #else
 		json in;
-		tsk.in(in);
+		tsk.input(in);
 #endif
 
 		tsk_submit();
@@ -97,7 +97,7 @@ struct pong : actor_interface{
 	void tsk_handler(task&m){
 /*$TET$pong$tsk*/
 #ifndef USE_TASK_EMUL
-		cout << m.out().dump();
+		cout << m.result().dump();
 #endif
 		_p->send();
 /*$TET$*/
@@ -120,7 +120,42 @@ int main(int argc, char *argv[])
 #endif
 	e.set_task_engine(eng);
 
-	eng.get_app_description("init");
+////////////////////////////////////////
+	task sort1(eng, "5ccaba85100000638af4eabe");
+	task sort2(eng, "5ccaba85100000638af4eabe");
+	task merge(eng, "5d22422012000050bcf95406");
+
+	json in_sort1, in_sort2, in_merge;
+
+	in_sort1["name"] = "sort1";
+	in_sort1["inputs"]["i"]  = 0;
+	in_sort1["inputs"]["vi"] = 0;
+	
+	in_sort2["name"] = "sort2";
+	in_sort2["inputs"]["i"] = 1;
+	in_sort2["inputs"]["vi"] = 0;
+	
+	in_merge["name"] = "merge";
+	in_merge["inputs"]["i"] = 0;
+	in_merge["inputs"]["vi"] = 1;
+	in_merge["inputs"]["j"] = 0;
+	in_merge["inputs"]["vj"] = 1;
+
+	sort1.submit(in_sort1);
+	sort2.submit(in_sort2);
+
+	eng.wait_for(sort1);
+	eng.wait_for(sort2);
+
+	cout << sort1.result().dump() << endl;
+	cout << sort2.result().dump() << endl;
+
+	merge.submit(in_merge);
+
+	eng.wait_all();
+
+	cout << merge.result().dump() << endl;
+////////////////////////////////////////
 
 	ping a_ping(e);
 	pong a_pong(e);

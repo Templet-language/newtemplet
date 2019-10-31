@@ -97,7 +97,7 @@ namespace TEMPLET {
 	class task {
 		friend	class taskengine;
 	public:
-		task() :_eng(0), _is_idle(true), _on_start([]() {}), _on_ready([]() {}) {} // only for compatibility with preprocessor's design mode
+		task() {} // only for compatibility with preprocessor's design mode
 		task(taskengine&e) :_eng(&e), _is_idle(true), _on_start([](){}), _on_ready([](){}) {}
 
 		void set_on_start(std::function<void(void)> callee) { _on_start = callee; }
