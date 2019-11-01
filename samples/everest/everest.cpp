@@ -1,6 +1,6 @@
 /*$TET$actor*/
 /*--------------------------------------------------------------------------*/
-/*  Copyright 2018 Sergei Vostokin                                          */
+/*  Copyright 2019 Sergei Vostokin                                          */
 /*                                                                          */
 /*  Licensed under the Apache License, Version 2.0 (the "License");         */
 /*  you may not use this file except in compliance with the License.        */
@@ -15,153 +15,250 @@
 /*  limitations under the License.                                          */
 /*--------------------------------------------------------------------------*/
 
+#define EVEREST_EXECUTION
+#include <templet.hpp>
 #include <iostream>
 
-#define EVEREST_EXECUTION
-//#define USE_TASK_EMUL
-#include <templet.hpp>
-
+using namespace TEMPLET;
 using namespace std;
+
+struct tasksort :task {
+	tasksort(taskengine&e):task(e, "5ccaba85100000638af4eabe"){}
+	tasksort(){}
+	void sort(int i, int vi){
+		json in_sort;
+		in_sort["name"] = "sort-task";
+		in_sort["inputs"]["i"] = i;
+		in_sort["inputs"]["vi"] = vi;
+		input(in_sort);
+	}
+	void sort_time(ostream&s) { s << result().dump(); }
+};
+
+struct taskmerge :task {
+	taskmerge(taskengine&e):task(e, "5d22422012000050bcf95406"){}
+	taskmerge(){}
+	void merge(int i, int vi, int j, int vj) {
+		json in_merge;
+		in_merge["name"] = "merge-task";
+		in_merge["inputs"]["i"] = i;
+		in_merge["inputs"]["vi"] = vi;
+		in_merge["inputs"]["j"] = j;
+		in_merge["inputs"]["vj"] = vj;
+		input(in_merge);
+	}
+	void merge_time(ostream&s) { s << result().dump(); }
+};
+
 /*$TET$*/
 
 using namespace TEMPLET;
 
-#pragma templet ~mes=
-
-struct mes : message_interface{
-/*$TET$mes$$data*/
-	string _mes;
-/*$TET$*/
+struct my_engine : engine{
+	my_engine(int argc, char *argv[]){
+		::init(this, argc, argv);
+	}
+	void run(){ TEMPLET::run(this); }
+	void map(){ TEMPLET::map(this); }
 };
 
-#pragma templet *ping(p!mes)+
+#pragma templet ~mes=
 
-struct ping : actor_interface{
-	ping(engine_interface&){
-/*$TET$ping$ping*/
+struct mes : message{
+	mes(actor*a, engine*e, int t) : _where(CLI), _cli(a), _client_id(t){
+		::init(this, a, e);
+	}
+
+	void send(){
+		if (_where == CLI){ TEMPLET::send(this, _srv, _server_id); _where = SRV; }
+		else if (_where == SRV){ TEMPLET::send(this, _cli, _client_id); _where = CLI; }
+	}
+
+/*$TET$mes$$data*/
+/*$TET$*/
+
+	enum { CLI, SRV } _where;
+	actor* _srv;
+	actor* _cli;
+	int _client_id;
+	int _server_id;
+};
+
+#pragma templet *sorter(p!mes,t.tasksort)+
+
+struct sorter : actor{
+	enum tag{START,TAG_p,TAG_t};
+
+	sorter(my_engine&e):p(this, &e, TAG_p),t(*(e._teng)){
+		::init(this, &e, sorter_recv_adapter);
+		::init(&_start, this, &e);
+		TEMPLET::send(&_start, this, START);/////////////////////////////////////////////////////
+		t.set_on_ready([&]() { t_handler(t); resume(); });
+/*$TET$sorter$sorter*/
 /*$TET$*/
 	}
 
+	bool access(message*m){ return TEMPLET::access(m, this); }
+	bool access(message&m){ return TEMPLET::access(&m, this); }
+
+	void at(int _at){ TEMPLET::at(this, _at); }
+	void delay(double t){ TEMPLET::delay(this, t); }
+	double time(){ return TEMPLET::time(this); }
+	void stop(){ TEMPLET::stop(this); }
+
 	mes p;
+	tasksort t;
+	void t_submit() { t.submit(); suspend(); };
+
+	static void sorter_recv_adapter (actor*a, message*m, int tag){
+		switch(tag){
+			case TAG_p: ((sorter*)a)->p_handler(*((mes*)m)); break;
+			case START: ((sorter*)a)->start(); break;
+		}
+	}
 
 	void start(){
-/*$TET$ping$start*/
-		p._mes = "Hello PONG!!!";
+/*$TET$sorter$start*/
+		t_submit();
+/*$TET$*/
+	}
+
+	void p_handler(mes&m){
+/*$TET$sorter$p*/
+/*$TET$*/
+	}
+
+	void t_handler(tasksort&t){////////////////////////////
+/*$TET$sorter$t*/
 		p.send();
 /*$TET$*/
 	}
 
-	void p_handler(mes&m){
-/*$TET$ping$p*/
-		cout << m._mes.c_str();
+/*$TET$sorter$$code&data*/
+/*$TET$*/
+	message _start;
+};
+
+#pragma templet *merger(p1?mes,p2?mes,t.taskmerge)
+
+struct merger : actor{
+	enum tag{START,TAG_p1,TAG_p2,TAG_t};
+
+	merger(my_engine&e):t(*(e._teng)){
+		::init(this, &e, merger_recv_adapter);
+		t.set_on_ready([&]() { t_handler(t); resume(); });
+/*$TET$merger$merger*/
+/*$TET$*/
+	}
+
+	bool access(message*m){ return TEMPLET::access(m, this); }
+	bool access(message&m){ return TEMPLET::access(&m, this); }
+
+	void at(int _at){ TEMPLET::at(this, _at); }
+	void delay(double t){ TEMPLET::delay(this, t); }
+	double time(){ return TEMPLET::time(this); }
+	void stop(){ TEMPLET::stop(this); }
+
+	void p1(mes&m){m._server_id=TAG_p1; m._srv=this;}
+	void p2(mes&m){m._server_id=TAG_p2; m._srv=this;}
+	taskmerge t;
+	void t_submit() { t.submit(); suspend(); };
+
+	static void merger_recv_adapter (actor*a, message*m, int tag){
+		switch(tag){
+			case TAG_p1: ((merger*)a)->p1_handler(*((mes*)m)); break;
+			case TAG_p2: ((merger*)a)->p2_handler(*((mes*)m)); break;
+		}
+	}
+
+	void p1_handler(mes&m){
+/*$TET$merger$p1*/
+		_p1 = &m;
+		on_sort_end();
+/*$TET$*/
+	}
+
+	void p2_handler(mes&m){
+/*$TET$merger$p2*/
+		_p2 = &m;
+		on_sort_end();
+/*$TET$*/
+	}
+
+	void t_handler(taskmerge&m){
+/*$TET$merger$t*/
 		stop();
 /*$TET$*/
 	}
 
-/*$TET$ping$$code&data*/
+/*$TET$merger$$code&data*/
+	void on_sort_end() {
+		if (access(_p1) && access(_p2)) {
+			t_submit();
+		}
+	}
+	mes* _p1 = 0;
+	mes* _p2 = 0;
 /*$TET$*/
 };
 
-#pragma templet *pong(p?mes,tsk.task)
-
-struct pong : actor_interface{
-	pong(engine_interface&){
-/*$TET$pong$pong*/
-		_p = 0;
-		tsk.set_app_id("5cd2ef531000006cfef4ff7a");//init app
+/*$TET$code&data*/
+/////////////////////////////////////////////////////
 /*$TET$*/
-	}
-
-	void p(mes&){}
-	task tsk;
-	void tsk_submit(){}
-
-	void p_handler(mes&m){
-/*$TET$pong$p*/
-		_p = &m;
-
-#ifdef USE_TASK_EMUL
-		tsk.set_on_start([&]() {
-			cout << m._mes.c_str() << endl;
-			m._mes = "Hello PING!!!";
-		});
-#else
-		json in;
-		tsk.input(in);
-#endif
-
-		tsk_submit();
-/*$TET$*/
-	}
-
-	void tsk_handler(task&m){
-/*$TET$pong$tsk*/
-#ifndef USE_TASK_EMUL
-		cout << m.result().dump();
-#endif
-		_p->send();
-/*$TET$*/
-	}
-
-/*$TET$pong$$code&data*/
-	mes* _p;
-/*$TET$*/
-};
 
 int main(int argc, char *argv[])
 {
-	engine_interface e(argc, argv);
+	my_engine e(argc, argv);
 /*$TET$footer*/
-	
-#ifdef USE_TASK_EMUL
-	taskengine eng;
-#else
-	taskengine eng("vostokinsv", "SergeyVostokin");
-#endif
+	taskengine eng("", "");
 	e.set_task_engine(eng);
 
-////////////////////////////////////////
-	task sort1(eng, "5ccaba85100000638af4eabe");
-	task sort2(eng, "5ccaba85100000638af4eabe");
-	task merge(eng, "5d22422012000050bcf95406");
+	sorter s1(e);
+	sorter s2(e);
+	merger m(e);
 
-	json in_sort1, in_sort2, in_merge;
+	s1.t.sort(0, 0);
+	s2.t.sort(1, 0);
+	m.t.merge(0, 1, 1, 1);
 
-	in_sort1["name"] = "sort1";
-	in_sort1["inputs"]["i"]  = 0;
-	in_sort1["inputs"]["vi"] = 0;
-	
-	in_sort2["name"] = "sort2";
-	in_sort2["inputs"]["i"] = 1;
-	in_sort2["inputs"]["vi"] = 0;
-	
-	in_merge["name"] = "merge";
-	in_merge["inputs"]["i"] = 0;
-	in_merge["inputs"]["vi"] = 1;
-	in_merge["inputs"]["j"] = 0;
-	in_merge["inputs"]["vj"] = 1;
+	m.p1(s1.p);
+	m.p2(s2.p);
 
-	sort1.submit(in_sort1);
-	sort2.submit(in_sort2);
+	e.run();
 
-	eng.wait_for(sort1);
-	eng.wait_for(sort2);
+	cout << endl << " sorter #1 " << endl;
+	s1.t.sort_time(cout);
+	cout << endl << " sorter #2 " << endl;
+	s2.t.sort_time(cout);
+	cout << endl << " merger " << endl;
+	m.t.merge_time(cout);
 
-	cout << sort1.result().dump() << endl;
-	cout << sort2.result().dump() << endl;
+	/*
+	tasksort sort1(eng), sort2(eng);
+	taskmerge merge(eng);
 
-	merge.submit(in_merge);
+	sort1.sort(0, 0);
+	sort2.sort(1, 0);
+	merge.merge(0, 1, 1, 1);
+
+	sort1.submit();
+	sort2.submit();
 
 	eng.wait_all();
 
-	cout << merge.result().dump() << endl;
-////////////////////////////////////////
+	merge.submit();
 
-	ping a_ping(e);
-	pong a_pong(e);
+	eng.wait_all();
 
-	a_pong.p(a_ping.p);
+	cout << endl << " sorter #1 " << endl;
+	sort1.sort_time(cout);
+	cout << endl << " sorter #2 " << endl;
+	sort2.sort_time(cout);
+	cout << endl << " merger " << endl;
+	merge.merge_time(cout);
+	*/
+	
 
-	e.run();
+
 /*$TET$*/
 }

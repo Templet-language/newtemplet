@@ -24,6 +24,7 @@
 #include <list>
 #include <chrono>
 #include <thread>
+#include <iostream>
 
 using json = nlohmann::json;
 using namespace std;
@@ -58,7 +59,7 @@ namespace TEMPLET {
 
 		bool wait_all();
 		bool wait_for(task& t);
-		task* wait_some();
+		bool wait_some();
 
 		bool submit(task&t);
 		bool is_idle(task&t);
@@ -292,7 +293,7 @@ namespace TEMPLET {
 		return true;
 	}
 
-	task* taskengine::wait_some() {
+	bool taskengine::wait_some() {
 		assert(++_recount == 1);
 
 		while (!_submitted.empty()) {
@@ -300,13 +301,22 @@ namespace TEMPLET {
 
 			while (it != _submitted.end()) {
 				event& ev = *it;
-				if (!_wait_loop_body(ev)) { assert(--_recount == 0); return 0; }
-				if (ev._task->is_idle()) { ev._task->_on_ready(); it = _submitted.erase(it); return ev._task; }	else it++;
+				if (!_wait_loop_body(ev)) { 
+					assert(--_recount == 0); 
+					return false; 
+				}
+				if (ev._task->is_idle()) {  
+					ev._task->_on_ready(); 
+					it = _submitted.erase(it); 
+					assert(--_recount == 0);
+					return true; 
+				}	
+				else it++;
 			}
 			std::this_thread::sleep_for(delay);
 		}
 		assert(--_recount == 0);
-		return 0;
+		return true;
 	}
 
 	bool taskengine::_wait_loop_body(event&ev) {

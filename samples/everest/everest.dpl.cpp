@@ -34,16 +34,17 @@ struct mes : message{
 	int _server_id;
 };
 
-#pragma templet *ping(p!mes)+
+#pragma templet *sorter(p!mes,t.tasksort)+
 
-struct ping : actor{
-	enum tag{START,TAG_p};
+struct sorter : actor{
+	enum tag{START,TAG_p,TAG_t};
 
-	ping(my_engine&e):p(this, &e, TAG_p){
-		::init(this, &e, ping_recv_adapter);
+	sorter(my_engine&e):p(this, &e, TAG_p),t(*(e._teng)){
+		::init(this, &e, sorter_recv_adapter);
 		::init(&_start, this, &e);
 		::send(&_start, this, START);
-/*$TET$ping$ping*/
+		t.set_on_ready([&]() { t_handler(t); resume(); });
+/*$TET$sorter$sorter*/
 /*$TET$*/
 	}
 
@@ -56,38 +57,45 @@ struct ping : actor{
 	void stop(){ TEMPLET::stop(this); }
 
 	mes p;
+	tasksort t;
+	void t_submit() { t.submit(); suspend(); };
 
-	static void ping_recv_adapter (actor*a, message*m, int tag){
+	static void sorter_recv_adapter (actor*a, message*m, int tag){
 		switch(tag){
-			case TAG_p: ((ping*)a)->p_handler(*((mes*)m)); break;
-			case START: ((ping*)a)->start(); break;
+			case TAG_p: ((sorter*)a)->p_handler(*((mes*)m)); break;
+			case START: ((sorter*)a)->start(); break;
 		}
 	}
 
 	void start(){
-/*$TET$ping$start*/
+/*$TET$sorter$start*/
 /*$TET$*/
 	}
 
 	void p_handler(mes&m){
-/*$TET$ping$p*/
+/*$TET$sorter$p*/
 /*$TET$*/
 	}
 
-/*$TET$ping$$code&data*/
+	void t_handler(tasksort&m){
+/*$TET$sorter$t*/
+/*$TET$*/
+	}
+
+/*$TET$sorter$$code&data*/
 /*$TET$*/
 	message _start;
 };
 
-#pragma templet *pong(p?mes,tsk.task)
+#pragma templet *merger(p1?mes,p2?mes,t.taskmerge)
 
-struct pong : actor{
-	enum tag{START,TAG_p,TAG_tsk};
+struct merger : actor{
+	enum tag{START,TAG_p1,TAG_p2,TAG_t};
 
-	pong(my_engine&e):tsk(*(e._teng)){
-		::init(this, &e, pong_recv_adapter);
-		tsk.set_on_ready([&]() { tsk_handler(tsk); resume(); });
-/*$TET$pong$pong*/
+	merger(my_engine&e):t(*(e._teng)){
+		::init(this, &e, merger_recv_adapter);
+		t.set_on_ready([&]() { t_handler(t); resume(); });
+/*$TET$merger$merger*/
 /*$TET$*/
 	}
 
@@ -99,27 +107,34 @@ struct pong : actor{
 	double time(){ return TEMPLET::time(this); }
 	void stop(){ TEMPLET::stop(this); }
 
-	void p(mes&m){m._server_id=TAG_p; m._srv=this;}
-	task tsk;
-	void tsk_submit() { tsk.submit(); suspend(); };
+	void p1(mes&m){m._server_id=TAG_p1; m._srv=this;}
+	void p2(mes&m){m._server_id=TAG_p2; m._srv=this;}
+	taskmerge t;
+	void t_submit() { t.submit(); suspend(); };
 
-	static void pong_recv_adapter (actor*a, message*m, int tag){
+	static void merger_recv_adapter (actor*a, message*m, int tag){
 		switch(tag){
-			case TAG_p: ((pong*)a)->p_handler(*((mes*)m)); break;
+			case TAG_p1: ((merger*)a)->p1_handler(*((mes*)m)); break;
+			case TAG_p2: ((merger*)a)->p2_handler(*((mes*)m)); break;
 		}
 	}
 
-	void p_handler(mes&m){
-/*$TET$pong$p*/
+	void p1_handler(mes&m){
+/*$TET$merger$p1*/
 /*$TET$*/
 	}
 
-	void tsk_handler(task&m){
-/*$TET$pong$tsk*/
+	void p2_handler(mes&m){
+/*$TET$merger$p2*/
 /*$TET$*/
 	}
 
-/*$TET$pong$$code&data*/
+	void t_handler(taskmerge&m){
+/*$TET$merger$t*/
+/*$TET$*/
+	}
+
+/*$TET$merger$$code&data*/
 /*$TET$*/
 };
 
