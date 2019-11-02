@@ -46,7 +46,7 @@ namespace TEMPLET{
 	inline void init(engine*, int argc = 0, char *argv[] = 0);
 	inline int  nodes(engine*);
 	inline void map(engine*);
-	inline void run(engine*);
+	inline bool run(engine*);
 	inline bool stat(engine*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp);
 
 	inline void save(saver*, const void*, size_t);
@@ -56,7 +56,7 @@ namespace TEMPLET{
 namespace TEMPLET {
 	struct engine_interface {
 		engine_interface(int argc, char *argv[]) {}
-		void run() {}
+		bool run() {}
 		void map() {}
 		
 		void set_task_engine(taskengine&) {} 
@@ -184,7 +184,7 @@ namespace TEMPLET{
 	inline int  nodes(engine*){ return 1; }
 	inline void map(engine*){}
 
-	inline void run(engine*e)
+	inline bool run(engine*e)
 	{
 		size_t rsize;
 		while ((rsize = e->_ready.size())){
@@ -214,6 +214,7 @@ namespace TEMPLET{
 			if (e->_stop) break;
 		}
 		assert(e->_stop);
+		return e->_stop;
 	}
 
 	inline bool stat(void*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp){ return false; }
@@ -281,7 +282,7 @@ namespace TEMPLET{
 	inline int  nodes(engine*){ return 1; }
 	inline void map(engine*){}
 
-	inline void run(engine*e)
+	inline bool run(engine*e)
 	{
 		while (!e->_ready.empty()){
 			message*m = e->_ready.front(); e->_ready.pop();
@@ -290,6 +291,7 @@ namespace TEMPLET{
 			a->_recv(a,m,m->_tag);
 			if (e->_stop) break;
 		}
+		return e->_stop;
 	}
 
 	inline bool stat(void*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp){ return false; }
@@ -443,7 +445,7 @@ namespace TEMPLET{
 		}
 	}
 
-	inline void run(engine*e)
+	inline bool run(engine*e)
 	{
 #if defined(USE_OPENMP)
 #pragma omp parallel 
@@ -461,6 +463,7 @@ namespace TEMPLET{
 		for (unsigned i = 0; i<n; i++) threads[i] = std::thread(tfunc, e);
 		for (auto& th : threads) th.join();
 #endif
+		return e->_stop;
 	}
 
 	inline bool stat(void*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp){ return false; }
@@ -559,7 +562,7 @@ namespace TEMPLET{
 	inline int  nodes(engine*){ return 1; }
 	inline void map(engine*){}
 
-	inline void run(engine*e)
+	inline bool run(engine*e)
 	{
 		actor*a = 0; message*m = 0;
 		double Tcur = 0.0, Tprev = 0.0;
@@ -589,7 +592,7 @@ namespace TEMPLET{
 
 					e->_Tp = Tcur; a->_recv(a,m,m->_tag); Tcur = e->_Tp;
 
-					if (e->_stop){ e->_Tp = Tcur; e->_Pmax = Pmax; return; }
+					if (e->_stop){ e->_Tp = Tcur; e->_Pmax = Pmax; return true; }
 
 					ev._time = Tcur; ev._type = event::ACTOR; ev._actor = a;
 					e->_calendar.push(ev);
@@ -608,7 +611,7 @@ namespace TEMPLET{
 
 					e->_Tp = Tcur; a->_recv(a,m,m->_tag); Tcur = e->_Tp;
 
-					if (e->_stop){ e->_Tp = Tcur; e->_Pmax = Pmax; return; }
+					if (e->_stop){ e->_Tp = Tcur; e->_Pmax = Pmax; return true; }
 
 					ev._time = Tcur; ev._type = event::ACTOR; ev._actor = a;
 					e->_calendar.push(ev);
@@ -617,6 +620,7 @@ namespace TEMPLET{
 			}
 		}
 		e->_Tp = Tcur; e->_Pmax = Pmax;
+		return false;
 	}
 
 	inline bool stat(engine*e, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp)
@@ -892,7 +896,7 @@ namespace TEMPLET{
 		exit(0);
 	}
 
-	inline void run(engine*e)
+	inline bool run(engine*e)
 	{
 		int stub;
 		MPI_Status status;
@@ -939,6 +943,7 @@ namespace TEMPLET{
 			recv_actor(e, MPI_ANY_SOURCE);
 		
 		MPI_Finalize();
+		return true;
 	}
 
 	inline bool stat(void*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp){ return false; }
@@ -1029,7 +1034,7 @@ namespace TEMPLET {
 	inline int  nodes(engine*) { return 1; }
 	inline void map(engine*) {}
 
-	inline void run(engine*e)
+	inline bool run(engine*e)
 	{
 		do {
 			while (!e->_ready.empty()) {
@@ -1042,11 +1047,12 @@ namespace TEMPLET {
 				}
 				else a->_queue.push(m);
 
-				if (e->_stop) return;
+				if (e->_stop) return true;
 			}
-			if (e->_suspended_num) e->_teng->wait_some();
+			if (e->_suspended_num) { if (!e->_teng->wait_some()) return false; };
 
 		} while (!e->_ready.empty() || e->_suspended_num != 0);
+		return e->_stop;
 	}
 
 	inline bool stat(void*, double*T1, double*Tp, int*Pmax, double*Smax, int P, double*Sp) { return false; }

@@ -58,7 +58,7 @@ struct my_engine : engine{
 	my_engine(int argc, char *argv[]){
 		::init(this, argc, argv);
 	}
-	void run(){ TEMPLET::run(this); }
+	bool run(){ return TEMPLET::run(this); }
 	void map(){ TEMPLET::map(this); }
 };
 
@@ -90,9 +90,9 @@ struct sorter : actor{
 	enum tag{START,TAG_p,TAG_t};
 
 	sorter(my_engine&e):p(this, &e, TAG_p),t(*(e._teng)){
-		::init(this, &e, sorter_recv_adapter);
-		::init(&_start, this, &e);
-		TEMPLET::send(&_start, this, START);/////////////////////////////////////////////////////
+		TEMPLET::init(this, &e, sorter_recv_adapter);
+		TEMPLET::init(&_start, this, &e);
+		TEMPLET::send(&_start, this, START);
 		t.set_on_ready([&]() { t_handler(t); resume(); });
 /*$TET$sorter$sorter*/
 /*$TET$*/
@@ -128,7 +128,7 @@ struct sorter : actor{
 /*$TET$*/
 	}
 
-	void t_handler(tasksort&t){////////////////////////////
+	void t_handler(tasksort&t){
 /*$TET$sorter$t*/
 		p.send();
 /*$TET$*/
@@ -145,7 +145,7 @@ struct merger : actor{
 	enum tag{START,TAG_p1,TAG_p2,TAG_t};
 
 	merger(my_engine&e):t(*(e._teng)){
-		::init(this, &e, merger_recv_adapter);
+		TEMPLET::init(this, &e, merger_recv_adapter);
 		t.set_on_ready([&]() { t_handler(t); resume(); });
 /*$TET$merger$merger*/
 /*$TET$*/
@@ -185,7 +185,7 @@ struct merger : actor{
 /*$TET$*/
 	}
 
-	void t_handler(taskmerge&m){
+	void t_handler(taskmerge&t){
 /*$TET$merger$t*/
 		stop();
 /*$TET$*/
@@ -257,8 +257,6 @@ int main(int argc, char *argv[])
 	cout << endl << " merger " << endl;
 	merge.merge_time(cout);
 	*/
-	
-
 
 /*$TET$*/
 }

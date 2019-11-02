@@ -269,7 +269,7 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			port& p = *it;
 
 			outf << endl;
-			outf << "\tvoid " << p.name << "_handler(" << p.message_name << "&m){\n"
+			outf << "\tvoid " << p.name << "_handler(" << p.message_name << "&" << (p.type==port::TASK?'t':'m') <<"){\n"
 				"/*$TET$" << a.name << "$" << p.name << "*/\n"
 				"/*$TET$*/\n"
 				"\t}\n";
@@ -296,6 +296,9 @@ void design(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		outf << "};\n\n";
 	}
 
+	outf << "/*$TET$code&data*/\n"
+		"/*$TET$*/\n\n";
+	
 	outf << "int main(int argc, char *argv[])\n"
 		"{\n"
 		"\tengine_interface e(argc, argv);\n";
@@ -319,7 +322,7 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 		"\tmy_engine(int argc, char *argv[]){\n"
 		"\t\t::init(this, argc, argv);\n"
 		"\t}\n"
-		"\tvoid run(){ TEMPLET::run(this); }\n"
+		"\tbool run(){ return TEMPLET::run(this); }\n"
 		"\tvoid map(){ TEMPLET::map(this); }\n"
 		"};\n";
 
@@ -449,12 +452,12 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			outf << "{\n";
 		}
 
-		if(a.serilizable) outf << "\t\t::init(this, &e, "<<a.name<<"_recv_adapter, "<<a.name<<"_save_adapter, "<<a.name<<"_restore_adapter);\n";
-		else outf << "\t\t::init(this, &e, "<<a.name<<"_recv_adapter);\n";
+		if(a.serilizable) outf << "\t\tTEMPLET::init(this, &e, "<<a.name<<"_recv_adapter, "<<a.name<<"_save_adapter, "<<a.name<<"_restore_adapter);\n";
+		else outf << "\t\tTEMPLET::init(this, &e, "<<a.name<<"_recv_adapter);\n";
 
 		if (a.initially_active){
-			outf << "\t\t::init(&_start, this, &e);\n"
-				"\t\t::send(&_start, this, START);\n";
+			outf << "\t\tTEMPLET::init(&_start, this, &e);\n"
+				"\t\tTEMPLET::send(&_start, this, START);\n";
 		}
 
 		for (std::list<port>::iterator it1 = a.ports.begin(); it1 != a.ports.end(); it1++) {
@@ -531,7 +534,7 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 			port& p = *it;
 
 			outf << endl;
-			outf << "\tvoid " << p.name << "_handler(" << p.message_name << "&m){\n"
+			outf << "\tvoid " << p.name << "_handler(" << p.message_name << "&"<< (p.type==port::TASK?'t':'m') <<"){\n"
 				"/*$TET$" << a.name << "$" << p.name << "*/\n"
 				"/*$TET$*/\n"
 				"\t}\n";
@@ -559,6 +562,9 @@ void deploy(ofstream&outf, list<message>&mlist, list<actor>&alist)
 
 		outf << "};\n\n";
 	}
+
+	outf << "/*$TET$code&data*/\n"
+		"/*$TET$*/\n\n";
 
 	outf << "int main(int argc, char *argv[])\n"
 		"{\n"

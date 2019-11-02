@@ -11,55 +11,71 @@ struct mes : message_interface{
 /*$TET$*/
 };
 
-#pragma templet *ping(p!mes)+
+#pragma templet *sorter(p!mes,t.tasksort)+
 
-struct ping : actor_interface{
-	ping(engine_interface&){
-/*$TET$ping$ping*/
+struct sorter : actor_interface{
+	sorter(engine_interface&){
+/*$TET$sorter$sorter*/
 /*$TET$*/
 	}
 
 	mes p;
+	tasksort t;
+	void t_submit(){}
 
 	void start(){
-/*$TET$ping$start*/
+/*$TET$sorter$start*/
 /*$TET$*/
 	}
 
 	void p_handler(mes&m){
-/*$TET$ping$p*/
+/*$TET$sorter$p*/
 /*$TET$*/
 	}
 
-/*$TET$ping$$code&data*/
+	void t_handler(tasksort&t){
+/*$TET$sorter$t*/
+/*$TET$*/
+	}
+
+/*$TET$sorter$$code&data*/
 /*$TET$*/
 };
 
-#pragma templet *pong(p?mes,tsk.task)
+#pragma templet *merger(p1?mes,p2?mes,t.taskmerge)
 
-struct pong : actor_interface{
-	pong(engine_interface&){
-/*$TET$pong$pong*/
+struct merger : actor_interface{
+	merger(engine_interface&){
+/*$TET$merger$merger*/
 /*$TET$*/
 	}
 
-	void p(mes&){}
-	task tsk;
-	void tsk_submit(){}
+	void p1(mes&){}
+	void p2(mes&){}
+	taskmerge t;
+	void t_submit(){}
 
-	void p_handler(mes&m){
-/*$TET$pong$p*/
+	void p1_handler(mes&m){
+/*$TET$merger$p1*/
 /*$TET$*/
 	}
 
-	void tsk_handler(task&m){
-/*$TET$pong$tsk*/
+	void p2_handler(mes&m){
+/*$TET$merger$p2*/
 /*$TET$*/
 	}
 
-/*$TET$pong$$code&data*/
+	void t_handler(taskmerge&t){
+/*$TET$merger$t*/
+/*$TET$*/
+	}
+
+/*$TET$merger$$code&data*/
 /*$TET$*/
 };
+
+/*$TET$code&data*/
+/*$TET$*/
 
 int main(int argc, char *argv[])
 {
