@@ -67,6 +67,10 @@ namespace TEMPLET {
 
 		bool get_app_description(const char* _id);
 
+		bool upload(const string& file, string& uri);
+		bool download(const string& file, const string& uri);
+		bool remove(const string& uri);
+
 	private:
 		inline bool _wait_loop_body(event&ev);
 		inline bool init();
@@ -137,7 +141,7 @@ namespace TEMPLET {
 
 		curl_easy_setopt(_curl, CURLOPT_COOKIEFILE, "");
 		curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYPEER, 0L);
-		curl_easy_setopt(_curl, CURLOPT_VERBOSE, false);
+		curl_easy_setopt(_curl, CURLOPT_VERBOSE, true);
 
 		struct curl_slist *headers = NULL;
 		headers = curl_slist_append(headers, "Accept: application/json");
@@ -217,6 +221,119 @@ namespace TEMPLET {
 		}
 
 		return false;
+	}
+
+	bool taskengine::upload(const string& file, string& uri){
+		if (!_curl) return false;
+		
+		FILE* h_file = fopen(file.c_str(), "rb");
+		if (!h_file) return false;
+
+		struct stat file_info;
+		if (fstat(_fileno(h_file), &file_info) != 0) return false;
+
+		string link = EVEREST_URL;
+		link += "/api/files/temp";
+
+		string file_name;
+		char sep1 = '/', sep2 = '\\', sep3 = ':';
+
+		size_t i1,i2,i3; 
+		i1 = file.rfind(sep1, file.length());
+		i2 = file.rfind(sep2, file.length());
+		i3 = file.rfind(sep2, file.length());
+
+		int i = (i1 > i2 && i1 != string::npos) ? i1 : i2;
+		i = (i > i3 && i != string::npos) ? i : i3;
+
+		if (i != string::npos)	file_name = file.substr(i + 1, file.length() - i);
+		else file_name = file;
+
+		//link += file_name;
+
+		struct curl_slist *headers = NULL;
+		//headers = curl_slist_append(headers, "Expect:");
+		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
+		curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, headers);
+
+		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
+		curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, "POST");
+
+		//curl_easy_setopt(_curl, CURLOPT_POST, 1L);
+		//curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, file_name.c_str());
+
+		curl_easy_setopt(_curl, CURLOPT_UPLOAD, 1L);
+		curl_easy_setopt(_curl, CURLOPT_READFUNCTION, &fread);
+		curl_easy_setopt(_curl, CURLOPT_READDATA, h_file);
+		curl_easy_setopt(_curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)file_info.st_size);
+
+		_response.clear();
+
+		curl_easy_perform(_curl);
+		
+		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
+
+		headers = NULL;
+		headers = curl_slist_append(headers, "Accept: application/json");
+		headers = curl_slist_append(headers, "Content-Type: application/json");
+		headers = curl_slist_append(headers, "charsets: utf-8");
+		curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, headers);
+
+		curl_easy_setopt(_curl, CURLOPT_UPLOAD, NULL);
+
+
+		if (_code == 200) {
+			json responseJSON = json::parse(_response);
+			uri = responseJSON["uri"];
+			fclose(h_file);
+			return true;
+		}
+		fclose(h_file);
+		return false;
+	}
+
+	bool taskengine::download(const string& file, const string& uri) {
+		if (!_curl) return false;
+
+		string link = EVEREST_URL;
+		link += uri;
+
+		FILE* h_file = fopen(file.c_str(), "wb");
+		if (!h_file) return false;
+
+		curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, NULL);
+		curl_easy_setopt(_curl, CURLOPT_HTTPGET, 1L);
+
+		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
+
+		curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, fwrite);
+		curl_easy_setopt(_curl, CURLOPT_WRITEDATA, h_file);
+
+		curl_easy_perform(_curl);
+
+		curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+		curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &_response);
+
+		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
+
+		fclose(h_file);
+
+		return _code == 200;
+	}
+
+	bool taskengine::remove(const string& uri) {
+		if (!_curl) return false;
+
+		string link = EVEREST_URL;
+		link += uri;
+
+		curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, "DELETE");
+		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
+		curl_easy_perform(_curl);
+
+		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
+
+		return _code == 200;
 	}
 
 	bool taskengine::submit(task&t) {

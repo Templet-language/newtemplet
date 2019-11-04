@@ -18,6 +18,7 @@
 #define EVEREST_EXECUTION
 #include <templet.hpp>
 #include <iostream>
+#include <string>
 
 using namespace TEMPLET;
 using namespace std;
@@ -211,6 +212,21 @@ int main(int argc, char *argv[])
 	my_engine e(argc, argv);
 /*$TET$footer*/
 	taskengine eng("", "");
+
+	string uri;
+	string file = "D:\\GitHub\\newtemplet\\samples\\everest\\hello.txt";
+	string file1 = "D:\\GitHub\\newtemplet\\samples\\everest\\hello1.txt";
+
+	eng.upload(file, uri);
+
+	cout << uri;
+
+	eng.download(file1,uri);
+
+	eng.remove(uri);
+
+/*
+
 	e.set_task_engine(eng);
 
 	sorter s1(e);
@@ -232,7 +248,7 @@ int main(int argc, char *argv[])
 	s2.t.sort_time(cout);
 	cout << endl << " merger " << endl;
 	m.t.merge_time(cout);
-
+	*/
 	/*
 	tasksort sort1(eng), sort2(eng);
 	taskmerge merge(eng);
