@@ -173,7 +173,7 @@ namespace TEMPLET {
 
 		if (_code == 200) {
 			json responseJSON = json::parse(_response);
-			_access_token = responseJSON["access_token"].dump();
+			_access_token = responseJSON["access_token"];
 			return true;
 		}
 		return false;
@@ -235,21 +235,17 @@ namespace TEMPLET {
 		string link = EVEREST_URL;
 		link += "/api/files/temp";
 
-		string file_name;
-		char sep1 = '/', sep2 = '\\', sep3 = ':';
+		//string file_name;
+		//char sep1 = '/', sep2 = '\\';
 
-		size_t i1,i2,i3; 
-		i1 = file.rfind(sep1, file.length());
-		i2 = file.rfind(sep2, file.length());
-		i3 = file.rfind(sep2, file.length());
+		//size_t i1,i2; 
+		//i1 = file.rfind(sep1, file.length());
+		//i2 = file.rfind(sep2, file.length());
 
-		int i = (i1 > i2 && i1 != string::npos) ? i1 : i2;
-		i = (i > i3 && i != string::npos) ? i : i3;
-
-		if (i != string::npos)	file_name = file.substr(i + 1, file.length() - i);
-		else file_name = file;
-
-		//link += file_name;
+		//int i = (i1 > i2 && i1 != string::npos) ? i1 : i2;
+	
+		//if (i != string::npos)	file_name = file.substr(i + 1, file.length() - i);
+		//else file_name = file;
 
 		struct curl_slist *headers = NULL;
 		//headers = curl_slist_append(headers, "Expect:");
