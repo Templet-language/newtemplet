@@ -15,8 +15,11 @@
 /*--------------------------------------------------------------------------*/
 #pragma once
 
+#include <curl/curl.h>
+
+#ifndef NLOHMANN_JSON_VERSION_MAJOR
 #include "json.hpp"
-#include "curl/curl.h"
+#endif
 
 #include <cassert>
 #include <functional>
@@ -25,6 +28,9 @@
 #include <chrono>
 #include <thread>
 #include <iostream>
+
+#include <stdio.h>
+#include <sys/stat.h>
 
 using json = nlohmann::json;
 using namespace std;
