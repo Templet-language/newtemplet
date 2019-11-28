@@ -211,6 +211,7 @@ int main(int argc, char *argv[])
 {
 	my_engine e(argc, argv);
 /*$TET$footer*/
+	taskengine eng("login", "password");
 
 	string uri;
 	string file = "D:\\GitHub\\newtemplet\\samples\\everest\\hello.txt";
