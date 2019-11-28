@@ -36,7 +36,8 @@ using json = nlohmann::json;
 using namespace std;
 
 const string EVEREST_URL = "https://everest.distcomp.org";
-const std::chrono::seconds delay(1);
+const std::chrono::seconds DELAY(1);
+const bool VERBOSE = false;
 
 namespace TEMPLET {
 
@@ -58,10 +59,11 @@ namespace TEMPLET {
 		taskengine(const char*login, const char*pass, const char* label=0) {
 			_login = login; _pass = pass; _curl = NULL; _recount = 0;
 			if (label)_label = label; else _label = "templet-session";
-			init();
+			_is_ready = init();
 		}
 
-		~taskengine() {	cleanup();	}
+		~taskengine() {	cleanup(); }
+		explicit operator bool() { return _is_ready; }
 
 		bool wait_all();
 		bool wait_for(task& t);
@@ -87,6 +89,7 @@ namespace TEMPLET {
 		string _pass;
 		string _label;
 		string _access_token;
+		bool   _is_ready;
 		int    _recount;
 		
 		CURL*  _curl;
@@ -147,7 +150,7 @@ namespace TEMPLET {
 
 		curl_easy_setopt(_curl, CURLOPT_COOKIEFILE, "");
 		curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYPEER, 0L);
-		curl_easy_setopt(_curl, CURLOPT_VERBOSE, true);
+		curl_easy_setopt(_curl, CURLOPT_VERBOSE, VERBOSE);
 
 		struct curl_slist *headers = NULL;
 		headers = curl_slist_append(headers, "Accept: application/json");
@@ -206,8 +209,9 @@ namespace TEMPLET {
 	}
 
 	bool taskengine::get_app_description(const char* _name) {
-		string name = _name;
 		if (!_curl) return false;
+		
+		string name = _name;
 
 		string link = EVEREST_URL;
 		link += "/api/apps/search?name=";
@@ -231,7 +235,65 @@ namespace TEMPLET {
 
 	bool taskengine::upload(const string& file, string& uri){
 		if (!_curl) return false;
+
+/*-------------------MIMEPOST------------------*/
+		struct curl_slist* headers = NULL;
+		curl_mime* form = NULL;
+		curl_mimepart* field = NULL;
+	
+		string link = EVEREST_URL;
+		link += "/api/files/temp";
+
+		string file_name;
+		char sep1 = '/', sep2 = '\\';
+
+		size_t i1, i2;
+		i1 = file.rfind(sep1, file.length());
+		i2 = file.rfind(sep2, file.length());
+		size_t i = (i1 > i2 && i1 != string::npos) ? i1 : i2;
+
+		if (i != string::npos)	file_name = file.substr(i + 1, file.length() - i);
+		else file_name = file;
+
+		form = curl_mime_init(_curl);
+
+		field = curl_mime_addpart(form);
+		curl_mime_name(field, "sendfile");
+		curl_mime_filedata(field, file.c_str());
+
+		field = curl_mime_addpart(form);
+		curl_mime_name(field, "filename");
+		curl_mime_data(field, file_name.c_str(), CURL_ZERO_TERMINATED);
+
+		field = curl_mime_addpart(form);
+		curl_mime_name(field, "submit");
+		curl_mime_data(field, "send", CURL_ZERO_TERMINATED);
 		
+		curl_easy_setopt(_curl, CURLOPT_MIMEPOST, form);
+
+		//headers = curl_slist_append(headers, "Expect:");
+		headers = curl_slist_append(headers, "Content-Type: multipart/form-data");
+		curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
+		
+		_response.clear();
+        curl_easy_perform(_curl);
+		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
+
+		if (_code == 200) {
+			json responseJSON = json::parse(_response);
+			uri = responseJSON["uri"];
+		}
+
+		headers = NULL;
+		headers = curl_slist_append(headers, "Accept: application/json");
+		headers = curl_slist_append(headers, "Content-Type: application/json");
+		headers = curl_slist_append(headers, "charsets: utf-8");
+		curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, headers);
+		
+		return _code == 200;
+		
+/*-------------------POST--------------------		
 		FILE* h_file = fopen(file.c_str(), "rb");
 		if (!h_file) return false;
 
@@ -240,19 +302,7 @@ namespace TEMPLET {
 
 		string link = EVEREST_URL;
 		link += "/api/files/temp";
-
-		//string file_name;
-		//char sep1 = '/', sep2 = '\\';
-
-		//size_t i1,i2; 
-		//i1 = file.rfind(sep1, file.length());
-		//i2 = file.rfind(sep2, file.length());
-
-		//int i = (i1 > i2 && i1 != string::npos) ? i1 : i2;
-	
-		//if (i != string::npos)	file_name = file.substr(i + 1, file.length() - i);
-		//else file_name = file;
-
+		
 		struct curl_slist *headers = NULL;
 		//headers = curl_slist_append(headers, "Expect:");
 		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
@@ -260,9 +310,6 @@ namespace TEMPLET {
 
 		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
 		curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, "POST");
-
-		//curl_easy_setopt(_curl, CURLOPT_POST, 1L);
-		//curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, file_name.c_str());
 
 		curl_easy_setopt(_curl, CURLOPT_UPLOAD, 1L);
 		curl_easy_setopt(_curl, CURLOPT_READFUNCTION, &fread);
@@ -283,7 +330,6 @@ namespace TEMPLET {
 
 		curl_easy_setopt(_curl, CURLOPT_UPLOAD, NULL);
 
-
 		if (_code == 200) {
 			json responseJSON = json::parse(_response);
 			uri = responseJSON["uri"];
@@ -292,6 +338,7 @@ namespace TEMPLET {
 		}
 		fclose(h_file);
 		return false;
+*/
 	}
 
 	bool taskengine::download(const string& file, const string& uri) {
@@ -389,7 +436,7 @@ namespace TEMPLET {
 				if (!_wait_loop_body(ev)) { assert(--_recount == 0); return false; }
 				if (ev._task->is_idle()) { ev._task->_on_ready(); it = _submitted.erase(it); }	else it++;
 			}
-			std::this_thread::sleep_for(delay);
+			std::this_thread::sleep_for(DELAY);
 		}
 		assert(--_recount == 0);
 		return true;
@@ -406,7 +453,7 @@ namespace TEMPLET {
 				if (!_wait_loop_body(ev)) { assert(--_recount == 0); return false; }
 				if (ev._task->is_idle()) { ev._task->_on_ready(); it = _submitted.erase(it); }	else it++;
 			}
-			std::this_thread::sleep_for(delay);
+			std::this_thread::sleep_for(DELAY);
 		}
 		assert(--_recount == 0);
 		return true;
@@ -432,14 +479,14 @@ namespace TEMPLET {
 				}	
 				else it++;
 			}
-			std::this_thread::sleep_for(delay);
+			std::this_thread::sleep_for(DELAY);
 		}
 		assert(--_recount == 0);
 		return true;
 	}
 
 	bool taskengine::_wait_loop_body(event&ev) {
-		assert(_curl);
+		if (!_curl) return false;
 
 		string link = EVEREST_URL;
 		link += "/api/jobs/";

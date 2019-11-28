@@ -211,19 +211,17 @@ int main(int argc, char *argv[])
 {
 	my_engine e(argc, argv);
 /*$TET$footer*/
-	taskengine eng("", "");
 
 	string uri;
 	string file = "D:\\GitHub\\newtemplet\\samples\\everest\\hello.txt";
 	string file1 = "D:\\GitHub\\newtemplet\\samples\\everest\\hello1.txt";
 
-	eng.upload(file, uri);
-
-	cout << uri;
-
-	eng.download(file1,uri);
-
-	eng.remove(uri);
+	if (eng) {
+		eng.upload(file, uri);
+		cout << uri;
+		cout << eng.download(file1, uri);
+		cout << eng.remove(uri);
+	}
 
 /*
 
