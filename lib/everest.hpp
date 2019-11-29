@@ -102,12 +102,13 @@ namespace TEMPLET {
 	class task {
 		friend	class taskengine;
 	public:
-		task() {} // only for compatibility with preprocessor's design mode
-
 		task(taskengine&e,const char* app_id=0) :
 			_eng(&e), _is_idle(true), _is_done(false), _on_ready([]() {}), _app_ID(app_id), _deletable(false) {}
-		void set_app_id(const char*id) { _app_ID = id; }
-		void set_cleanup() { _deletable = true; }
+		task() : _eng(0), _is_idle(true), _is_done(false), _on_ready([]() {}), _app_ID(0), _deletable(false) {} 
+
+		bool set_app_id(const char*id) { if (_is_idle) { _app_ID = id; return true; } return false; }
+		bool set_engine(taskengine&e) { if (_is_idle) { _eng = &e; return true; } return false; }
+		void set_deletable(bool del) { _deletable = del; }
 		
 		json& result() { return _result; }
 		void  input(json&in) { _input = in; }
@@ -167,17 +168,16 @@ namespace TEMPLET {
 		string link = EVEREST_URL;
 		link += "/auth/access_token";
 
-		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
-
 		curl_easy_setopt(_curl, CURLOPT_POST, 1L);
+		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
+		
 		curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, post.c_str());
 
 		curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, WriteCallback);
 		curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &_response);
+
 		_response.clear();
-
 		curl_easy_perform(_curl);
-
 		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
 
 		if (_code == 200) {
@@ -219,10 +219,9 @@ namespace TEMPLET {
 
 		curl_easy_setopt(_curl, CURLOPT_HTTPGET, 1L);
 		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
+
 		_response.clear();
-
 		curl_easy_perform(_curl);
-
 		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
 
 		if (_code == 200) {
@@ -270,11 +269,11 @@ namespace TEMPLET {
 		curl_mime_data(field, "send", CURL_ZERO_TERMINATED);
 		
 		curl_easy_setopt(_curl, CURLOPT_MIMEPOST, form);
+		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
 
 		//headers = curl_slist_append(headers, "Expect:");
 		headers = curl_slist_append(headers, "Content-Type: multipart/form-data");
 		curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, headers);
-		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
 		
 		_response.clear();
         curl_easy_perform(_curl);
@@ -302,14 +301,14 @@ namespace TEMPLET {
 
 		string link = EVEREST_URL;
 		link += "/api/files/temp";
+
+		curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, "POST");
+		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
 		
 		struct curl_slist *headers = NULL;
 		//headers = curl_slist_append(headers, "Expect:");
 		headers = curl_slist_append(headers, "Content-Type: application/octet-stream");
 		curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, headers);
-
-		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
-		curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, "POST");
 
 		curl_easy_setopt(_curl, CURLOPT_UPLOAD, 1L);
 		curl_easy_setopt(_curl, CURLOPT_READFUNCTION, &fread);
@@ -317,9 +316,7 @@ namespace TEMPLET {
 		curl_easy_setopt(_curl, CURLOPT_INFILESIZE_LARGE, (curl_off_t)file_info.st_size);
 
 		_response.clear();
-
 		curl_easy_perform(_curl);
-		
 		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
 
 		headers = NULL;
@@ -349,21 +346,19 @@ namespace TEMPLET {
 
 		FILE* h_file = fopen(file.c_str(), "wb");
 		if (!h_file) return false;
-
-		curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, NULL);
+		
 		curl_easy_setopt(_curl, CURLOPT_HTTPGET, 1L);
-
 		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
 
+		curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, NULL);
 		curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, fwrite);
 		curl_easy_setopt(_curl, CURLOPT_WRITEDATA, h_file);
 
 		curl_easy_perform(_curl);
+		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
 
 		curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, WriteCallback);
 		curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &_response);
-
-		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
 
 		fclose(h_file);
 
@@ -378,15 +373,17 @@ namespace TEMPLET {
 
 		curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, "DELETE");
 		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
-		curl_easy_perform(_curl);
 
+		curl_easy_perform(_curl);
 		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
 
 		return _code == 200;
 	}
 
 	bool taskengine::submit(task&t) {
-		assert(t._eng == this && t.is_idle() && _curl);
+		if (!_curl) return false;
+
+		assert(t._eng == this && t.is_idle());
 
 		string link = EVEREST_URL;
 		string post;
@@ -395,12 +392,13 @@ namespace TEMPLET {
 		link += "/api/apps/" + t._app_ID;
 		post = t._input.dump();
 
-		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
-		curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, NULL);
 		curl_easy_setopt(_curl, CURLOPT_POST, 1L);
-		curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, post.c_str());
-		_response.clear();
+		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
 
+		curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, NULL);
+		curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, post.c_str());
+
+		_response.clear();
 		curl_easy_perform(_curl);
 		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
 
@@ -491,15 +489,14 @@ namespace TEMPLET {
 		string link = EVEREST_URL;
 		link += "/api/jobs/";
 		link += ev._id;
+		
+		curl_easy_setopt(_curl, CURLOPT_HTTPGET, 1L);
+		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
 
 		curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, NULL);
-		curl_easy_setopt(_curl, CURLOPT_HTTPGET, 1L);
 
-		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
 		_response.clear();
-
 		curl_easy_perform(_curl);
-
 		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
 
 		if (_code == 200 || _code == 201) {
