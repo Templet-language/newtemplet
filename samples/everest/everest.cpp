@@ -212,6 +212,12 @@ int main(int argc, char *argv[])
 	my_engine e(argc, argv);
 /*$TET$footer*/
 	taskengine eng("login", "password");
+	//taskengine eng("access_token");
+
+	string token;
+	eng.get_access_token(token);
+
+	cout << token;
 
 	string uri;
 	string file = "D:\\GitHub\\newtemplet\\samples\\everest\\hello.txt";
@@ -224,8 +230,7 @@ int main(int argc, char *argv[])
 		cout << eng.remove(uri);
 	}
 
-/*
-
+	/*
 	e.set_task_engine(eng);
 
 	sorter s1(e);
@@ -247,6 +252,7 @@ int main(int argc, char *argv[])
 	s2.t.sort_time(cout);
 	cout << endl << " merger " << endl;
 	m.t.merge_time(cout);
+
 	*/
 	/*
 	tasksort sort1(eng), sort2(eng);

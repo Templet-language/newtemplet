@@ -61,6 +61,10 @@ namespace TEMPLET {
 			if (label)_label = label; else _label = "templet-session";
 			_is_ready = init();
 		}
+		taskengine(const char* access_token) {
+			_curl = NULL; _recount = 0; _access_token = access_token;
+			_is_ready = init();
+		}
 
 		~taskengine() {	cleanup(); }
 		explicit operator bool() { return _is_ready; }
@@ -73,7 +77,8 @@ namespace TEMPLET {
 		bool is_idle(task&t);
 		bool is_done(task&t);
 
-		bool get_app_description(const char* _id);
+		bool get_app_description(const char* app_name);
+		bool get_access_token(string&t) {if(_is_ready){t=_access_token; return true;} else return false;}
 
 		bool upload(const string& file, string& uri);
 		bool download(const string& file, const string& uri);
@@ -82,7 +87,7 @@ namespace TEMPLET {
 	private:
 		inline bool _wait_loop_body(event&ev);
 		inline bool init();
-		inline bool cleanup();
+		inline void cleanup();
 
 	private:
 		string _login;
@@ -91,6 +96,9 @@ namespace TEMPLET {
 		string _access_token;
 		bool   _is_ready;
 		int    _recount;
+
+		curl_slist* _common_headers;
+		curl_slist* _upload_headers;
 		
 		CURL*  _curl;
 		long   _code;
@@ -153,59 +161,83 @@ namespace TEMPLET {
 		curl_easy_setopt(_curl, CURLOPT_SSL_VERIFYPEER, 0L);
 		curl_easy_setopt(_curl, CURLOPT_VERBOSE, VERBOSE);
 
-		struct curl_slist *headers = NULL;
-		headers = curl_slist_append(headers, "Accept: application/json");
-		headers = curl_slist_append(headers, "Content-Type: application/json");
-		headers = curl_slist_append(headers, "charsets: utf-8");
-		curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, headers);
+		_common_headers = NULL;
+		_common_headers = curl_slist_append(_common_headers, "Accept: application/json");
+		_common_headers = curl_slist_append(_common_headers, "Content-Type: application/json");
+		_common_headers = curl_slist_append(_common_headers, "charsets: utf-8");
 
-		json j;
-		j["username"] = _login;
-		j["password"] = _pass;
-		j["label"] = _label;
-		string post = j.dump();
-
-		string link = EVEREST_URL;
-		link += "/auth/access_token";
-
-		curl_easy_setopt(_curl, CURLOPT_POST, 1L);
-		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
+		_upload_headers = NULL;
+		//_upload_headers = curl_slist_append(_upload_headers, "Expect:");
+		_upload_headers = curl_slist_append(_upload_headers, "Content-Type: multipart/form-data");
 		
-		curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, post.c_str());
+		curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, _common_headers);
 
 		curl_easy_setopt(_curl, CURLOPT_WRITEFUNCTION, WriteCallback);
 		curl_easy_setopt(_curl, CURLOPT_WRITEDATA, &_response);
 
-		_response.clear();
-		curl_easy_perform(_curl);
-		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
+		if (!_access_token.empty()) {
+			#define SEP  "\t" 
+			string cookie_list =
+				"everest.distcomp.org"    /* Hostname */
+				SEP "FALSE"      /* Include subdomains */
+				SEP "/"          /* Path */
+				SEP "FALSE"      /* Secure */
+				SEP "0"          /* Expiry in epoch time format. 0 == Session */
+				SEP "access_token"        /* Name */
+				SEP;       /* Value */
 
-		if (_code == 200) {
-			json responseJSON = json::parse(_response);
-			_access_token = responseJSON["access_token"];
-			return true;
+			cookie_list+=_access_token;
+
+			return CURLE_OK == curl_easy_setopt(_curl, CURLOPT_COOKIELIST, cookie_list.c_str());
 		}
-		return false;
+		else {
+			json j;
+			j["username"] = _login;
+			j["password"] = _pass;
+			j["label"] = _label;
+			string post = j.dump();
+
+			string link = EVEREST_URL;
+			link += "/auth/access_token";
+
+			curl_easy_setopt(_curl, CURLOPT_POST, 1L);
+			curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
+
+			curl_easy_setopt(_curl, CURLOPT_POSTFIELDS, post.c_str());
+
+			_response.clear();
+			curl_easy_perform(_curl);
+			curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
+
+			if (_code == 200) {
+				json responseJSON = json::parse(_response);
+				_access_token = responseJSON["access_token"];
+				return true;
+			}
+			return false;
+		}
 	}
 
-	bool taskengine::cleanup() {
-		if (!_curl) return false;
+	void taskengine::cleanup() {
+		if (!_curl) return;
 
-		string link = EVEREST_URL;
-		link += "/api/auth/access_token";
+		if (!_pass.empty()) {
+			string link = EVEREST_URL;
+			link += "/api/auth/access_token";
 
-		curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, "DELETE");
-		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
+			curl_easy_setopt(_curl, CURLOPT_CUSTOMREQUEST, "DELETE");
+			curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
 
-		curl_easy_perform(_curl);
-		curl_easy_getinfo(_curl, CURLINFO_RESPONSE_CODE, &_code);
+			curl_easy_perform(_curl);
+		}
+
+		curl_slist_free_all(_common_headers);
+		curl_slist_free_all(_upload_headers);
 
 		curl_easy_cleanup(_curl);
 		curl_global_cleanup();
 
 		_curl = NULL;
-
-		return  _code == 200;
 	}
 
 	bool taskengine::get_app_description(const char* _name) {
@@ -231,12 +263,11 @@ namespace TEMPLET {
 
 		return false;
 	}
-
+	
 	bool taskengine::upload(const string& file, string& uri){
 		if (!_curl) return false;
 
 /*-------------------MIMEPOST------------------*/
-		struct curl_slist* headers = NULL;
 		curl_mime* form = NULL;
 		curl_mimepart* field = NULL;
 	
@@ -271,9 +302,7 @@ namespace TEMPLET {
 		curl_easy_setopt(_curl, CURLOPT_MIMEPOST, form);
 		curl_easy_setopt(_curl, CURLOPT_URL, link.c_str());
 
-		//headers = curl_slist_append(headers, "Expect:");
-		headers = curl_slist_append(headers, "Content-Type: multipart/form-data");
-		curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, headers);
+		curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, _upload_headers);
 		
 		_response.clear();
         curl_easy_perform(_curl);
@@ -283,12 +312,9 @@ namespace TEMPLET {
 			json responseJSON = json::parse(_response);
 			uri = responseJSON["uri"];
 		}
-
-		headers = NULL;
-		headers = curl_slist_append(headers, "Accept: application/json");
-		headers = curl_slist_append(headers, "Content-Type: application/json");
-		headers = curl_slist_append(headers, "charsets: utf-8");
-		curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, headers);
+		
+		curl_easy_setopt(_curl, CURLOPT_HTTPHEADER, _common_headers);
+		curl_mime_free(form);
 		
 		return _code == 200;
 		
