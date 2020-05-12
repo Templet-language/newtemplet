@@ -28,6 +28,39 @@ namespace templet {
 		void dispatch();
 	};
 
+	/*
+		lock_type lock_1, lock_2;
+		
+		void on_resume(){
+			
+			lock(lock_1);
+			
+			put_local_messages_to_queue();
+		
+try_to_be_the_master:	
+			if(try_lock(lock_2)){
+			
+				unlock(lock_1);
+				
+				while(message_in_queue())process_message();
+				
+				unlock(lock_2);
+			}
+			else{
+				unlock(lock_1);
+				return;
+			}
+			
+			lock(lock_1);
+			
+			if(!message_in_queue()){
+				unlock(lock_1);
+				return;
+			}
+			else goto try_to_be_the_master;
+		}
+	*/
+	
 	class actor {
 	friend class message;
 		engine& eng;
