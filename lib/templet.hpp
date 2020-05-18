@@ -18,10 +18,14 @@
 
 #include <cstddef>
 
+#ifdef EVEREST_EXECUTION
+
 #ifdef USE_TASK_EMUL
 #include <taskemul.hpp>
 #else
 #include <everest.hpp>
+#endif
+
 #endif
 
 namespace TEMPLET{
@@ -58,9 +62,10 @@ namespace TEMPLET {
 		engine_interface(int argc, char *argv[]) {}
 		bool run() {}
 		void map() {}
-		
+#ifdef EVEREST_EXECUTION		
 		void set_task_engine(taskengine&) {} 
 		void set_task_engine(taskengine*) {}
+#endif
 	};
 
 	struct message_interface { void send() {} };
