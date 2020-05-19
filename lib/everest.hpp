@@ -67,6 +67,7 @@ namespace TEMPLET {
 		}
 
 		~taskengine() {	cleanup(); }
+		void free_access_token(){_pass.clear();}
 		explicit operator bool() { return _is_ready; }
 
 		bool wait_all();
@@ -112,7 +113,7 @@ namespace TEMPLET {
 	public:
 		task(taskengine&e,const char* app_id=0) :
 			_eng(&e), _is_idle(true), _is_done(false), _on_ready([]() {}), _app_ID(app_id), _deletable(false) {}
-		task() : _eng(0), _is_idle(true), _is_done(false), _on_ready([]() {}), _app_ID(0), _deletable(false) {} 
+		task() : _eng(0), _is_idle(true), _is_done(false), _on_ready([]() {}), _app_ID(""), _deletable(false) {} 
 
 		bool set_app_id(const char*id) { if (_is_idle) { _app_ID = id; return true; } return false; }
 		bool set_engine(taskengine&e) { if (_is_idle) { _eng = &e; return true; } return false; }
