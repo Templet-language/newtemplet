@@ -16,11 +16,11 @@
 
 namespace templet{
 	
-	class lock;
 	class message;
 	class actor;
-	class engine;
-	class base_tsk;
-	class base_eng;
+	class lock;
+	template <T> class engine<T=lock>;
+	class base_task;
+	class base_engine;
 
 }
