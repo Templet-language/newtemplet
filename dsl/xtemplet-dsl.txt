@@ -28,8 +28,8 @@ field ::= id '!' id |
  
 #pragma templet actor_type
 
-class actor_type: public templet::actor{
-	actor_type(templet::engine&e):templet::actor_type(e){
+struct actor_type: public templet::actor{
+	actor_type(templet::engine&e):templet::actor(e){
 		// add your code
 	}
 		// add your code
@@ -39,8 +39,8 @@ class actor_type: public templet::actor{
 
 #pragma templet !actor_type
 
-class actor_type: public templet::actor{
-	actor_type(templet::engine&e):templet::actor_type(e){
+struct actor_type: public templet::actor{
+	actor_type(templet::engine&e):templet::actor(e){
 		// add your code
 	}
 	void on_start(){
@@ -53,7 +53,7 @@ class actor_type: public templet::actor{
 
 #pragma templet actor_type(a_message!message_type)
 
-class actor_type: public templet::actor{
+struct actor_type: public templet::actor{
 	static void on_a_message_adapter(templet::actor*a,templet::message*m){
 		((actor_type*)a)->on_a_message(*(message_type*)m); }
 	
@@ -76,7 +76,7 @@ class actor_type: public templet::actor{
 
 #pragma templet actor_type(a_message?message_type)
 
-class actor_type: public templet::actor{
+struct actor_type: public templet::actor{
 	static void on_a_message_adapter(templet::actor*a,templet::message*m){
 		((actor_type*)a)->on_a_message(*(message_type*)m); }
 	
@@ -99,7 +99,7 @@ class actor_type: public templet::actor{
 
 #pragma templet actor_type(a_task:base)
 
-class actor_type: public templet::actor{
+struct actor_type: public templet::actor{
 	static void on_a_task_adapter(templet::actor*a,templet::base_task*t){
 		((actor_type*)a)->on_a_task(*(templet::base_tsk*)t); }
 	
@@ -122,7 +122,7 @@ class actor_type: public templet::actor{
 
 #pragma templet actor_type(a_task:base.task_type)
 
-class actor_type: public templet::actor{
+struct actor_type: public templet::actor{
 	static on_a_task_adapter(templet::actor*a,templet::base_task*t){
 		((actor_type*)a)->on_a_task(*(task_type*)t); }
 	

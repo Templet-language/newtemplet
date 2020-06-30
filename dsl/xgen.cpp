@@ -163,6 +163,27 @@ void generate(ofstream&outf, list<actor>&alist)
 		actor& a = *it;
 
 		outf << "#pragma templet "; print_actor(outf, a); outf << endl << endl;
+
+		outf << "struct " << a.name << " :public templet::actor {\n";
+
+		outf << "\t" << a.name << "(templet::engine&e):templet::actor(e) {\n"
+			"/*$TET$" << a.name << "$" << a.name << "*/\n"
+			"/*$TET$*/\n"
+			"\t}\n";
+
+		if (a.initially_active) {
+			outf << endl;
+			outf << "\tvoid on_start(){\n"
+				"/*$TET$" << a.name << "$start*/\n"
+				"/*$TET$*/\n"
+				"\t}\n";
+		}
+
+		outf << endl;
+		outf << "/*$TET$" << a.name << "$$footer*/\n"
+			    "/*$TET$*/\n";
+
+		outf << "};\n\n";
 	}
 
 	outf << "/*$TET$$footer*/\n"
