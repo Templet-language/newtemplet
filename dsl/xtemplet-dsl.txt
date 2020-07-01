@@ -14,7 +14,7 @@
 /*  limitations under the License.                                          */
 /*--------------------------------------------------------------------------*/
 
-/////////////// EBNF-based syntax ////////////////
+/////////////// EBNF-based syntax //////////////////
 
 #pragma templet ['!'] id ['(' field {',' field} ')']
 
@@ -22,7 +22,7 @@ field ::= id '!' id |
           id '?' id | 
           id ':' id ['.' id]
 
-//////////////////////////////////////////////////
+////////////////////////////////////////////////////
 
 // 1 //
  
@@ -101,17 +101,17 @@ struct actor_type: public templet::actor{
 
 struct actor_type: public templet::actor{
 	static void on_a_task_adapter(templet::actor*a,templet::base_task*t){
-		((actor_type*)a)->on_a_task(*(templet::base_tsk*)t); }
+		((actor_type*)a)->on_a_task(*(templet::base_task*)t); }
 	
 	actor_type(templet::engine&e,templet::base_engine&te):templet::actor(e),
-		a_task(te, this, &on_a_task_adapter)
+		a_task(te_base, this, &on_a_task_adapter)
 	{
 		// add your code
 	}
 	void on_start(){
 		// add your code
 	}
-	void on_a_task(message_type&m){
+	void on_a_task(templet::base_task&t){
 		// add your code	
 	}
 	templet::base_task a_task;
@@ -127,14 +127,14 @@ struct actor_type: public templet::actor{
 		((actor_type*)a)->on_a_task(*(task_type*)t); }
 	
 	actor_type(templet::engine&e,templet::base_engine&te):templet::actor(e),
-		a_task(te, this, &on_a_task_adapter)
+		a_task(te_base, this, &on_a_task_adapter)
 	{
 		// add your code
 	}
 	void on_start(){
 		// add your code
 	}
-	void on_a_task(task_type&m){
+	void on_a_task(task_type&t){
 		// add your code	
 	}
 	task_type a_task;

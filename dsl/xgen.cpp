@@ -159,17 +159,61 @@ void generate(ofstream&outf, list<actor>&alist)
 
 	outf << endl;
 
-	for(std::list<actor>::iterator it = alist.begin(); it!=alist.end();it++){
+	for (std::list<actor>::iterator it = alist.begin(); it != alist.end(); it++) {
 		actor& a = *it;
 
 		outf << "#pragma templet "; print_actor(outf, a); outf << endl << endl;
 
 		outf << "struct " << a.name << " :public templet::actor {\n";
 
-		outf << "\t" << a.name << "(templet::engine&e):templet::actor(e) {\n"
-			"/*$TET$" << a.name << "$" << a.name << "*/\n"
-			"/*$TET$*/\n"
-			"\t}\n";
+		for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
+			port& p = *it;
+
+			if (p.type == port::CLIENT || p.type == port::SERVER) {
+				outf << "\tstatic void on_" << p.name << "_adapter(templet::actor*a, templet::message*m) {\n" <<
+					"\t\t((" << a.name << "*)a)->on_" << p.name << "(*(" << p.name_type << "*)m);}\n";
+			}
+			else if (p.type == port::TASK) {
+				if (p.task_type.empty()) {
+					outf << "\tstatic void on_" << p.name << "_adapter(templet::actor*a, templet::base_task*t) {\n"
+						"\t\t((" << a.name << "*)a)->on_" << p.name << "(*(templet::" << p.name_type << "_task*)t);\n";
+				}
+				else {
+					outf << "\tstatic void on_" << p.name << "_adapter(templet::actor*a, templet::base_task*t) {\n"
+						"\t\t((" << a.name << "*)a)->on_" << p.name << "(*(" << p.task_type << "*)t);\n";
+				}
+			}
+		}
+
+		outf << endl;
+
+		if (a.ports.empty()){
+			outf << "\t" << a.name << "(templet::engine&e):templet::actor(e) {\n";
+	    }
+		else {
+			outf << "\t" << a.name << "(templet::engine&e):templet::actor(e)";
+
+			for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
+				port& p = *it;
+
+				if (p.type == port::CLIENT) {
+					outf << ",\n";
+					outf << "\t\t" << p.name << "(this, &on_" << p.name << "_adapter)";
+				}
+				else if (p.type == port::TASK) {
+					outf << ",\n";
+					outf << "\t\t" << p.name << "(te_" << p.name_type << ", this, &on_" << p.name << "_adapter)";
+				}
+
+			}
+
+			outf << "\n\t{\n";
+		}
+		
+		outf <<
+		"/*$TET$" << a.name << "$" << a.name << "*/\n"
+		"/*$TET$*/\n"
+		"\t}\n";
 
 		if (a.initially_active) {
 			outf << endl;
@@ -177,6 +221,55 @@ void generate(ofstream&outf, list<actor>&alist)
 				"/*$TET$" << a.name << "$start*/\n"
 				"/*$TET$*/\n"
 				"\t}\n";
+		}
+
+		for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
+			port& p = *it;
+			
+			outf << endl;
+			
+			if (p.type == port::CLIENT || p.type == port::SERVER) {
+				
+				outf <<
+					"\tinline void on_" << p.name << "(" << p.name_type << "&m) {\n"
+					"/*$TET$" << a.name << "$" << p.name << "*/\n"
+					"/*$TET$*/\n"
+					"\t}\n";
+
+			}
+			else if (p.type == port::TASK) {
+				if (p.task_type.empty()) {
+					outf <<
+						"\tinline void on_" << p.name << "(templet::" << p.name_type << "_task&t) {\n"
+						"/*$TET$" << a.name << "$" << p.name << "*/\n"
+						"/*$TET$*/\n"
+						"\t}\n";
+				}
+				else {
+					outf <<
+						"\tinline void on_" << p.name << "(" << p.task_type << "&t) {\n"
+						"/*$TET$" << a.name << "$" << p.name << "*/\n"
+						"/*$TET$*/\n"
+						"\t}\n";
+				}
+ 			}
+		}
+
+		outf << endl;
+		
+		for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
+			port& p = *it;
+
+			if (p.type == port::CLIENT ) {
+				outf << "\t" << p.name_type <<" " << p.name << ";\n";
+			}
+			else if (p.type == port::SERVER) {
+				outf << "\tvoid " << p.name << "(" << p.name_type << "&m) { m.bind(this, &on_" << p.name << "_adapter); }\n";
+			}
+			else if (p.type == port::TASK) {
+				if(p.task_type.empty())	outf << "\ttemplet::" << p.name_type << "_task " << p.name << ";\n";
+				else outf << "\t" << p.task_type << " " << p.name << ";\n";
+			}
 		}
 
 		outf << endl;
