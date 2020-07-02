@@ -18,9 +18,54 @@ namespace templet{
 	
 	class message;
 	class actor;
-	class lock;
-	template <T> class engine<T=lock>;
-	class base_task;
+	class engine;
 	class base_engine;
+	class base_task;
 
+	class mutex_stub {
+	public:
+		bool try_lock(){}
+		void lock(){}
+		void unlock(){}
+	};
+
+	typedef void(*message_adaptor)(actor*, message*);
+	typedef void(*task_adaptor)(actor*, base_task*);
+
+	class message {
+	public:
+		message(actor*, message_adaptor){}
+		message() {}
+		void send(){}
+		void bind(actor*, message_adaptor){}
+	};
+
+	class actor {
+	public:
+		actor(engine&){}
+		bool access(message&) const { return false; }
+		bool access(message*) const { return false; }
+		void suspend(){}
+		void resume(){}
+	};
+	
+	class engine {
+	public:
+		engine(){}
+		~engine(){}
+		bool dispatch(){}
+	};
+
+	class base_task {
+	public:
+		base_task(base_engine&, actor*, task_adaptor){}
+		virtual void run(){}
+		void submit(){}
+	};
+
+	class base_engine {
+		base_engine(){}
+		~base_engine(){}
+		void run(){}
+	};
 }

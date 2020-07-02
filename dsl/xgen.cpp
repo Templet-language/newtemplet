@@ -20,6 +20,7 @@
 #include <fstream>
 #include <locale>
 #include <cstdlib>
+#include <set>
 
 using namespace std;
 
@@ -154,12 +155,15 @@ void print_actor(ostream&s,actor&a)
 
 void generate(ofstream&outf, list<actor>&alist)
 {
+	set<string> task_engine_types;
+
 	outf << "/*$TET$$header*/\n"
 	        "/*$TET$*/\n";
 
 	outf << endl;
 
 	for (std::list<actor>::iterator it = alist.begin(); it != alist.end(); it++) {
+		task_engine_types.clear();
 		actor& a = *it;
 
 		outf << "#pragma templet "; print_actor(outf, a); outf << endl << endl;
@@ -176,12 +180,13 @@ void generate(ofstream&outf, list<actor>&alist)
 			else if (p.type == port::TASK) {
 				if (p.task_type.empty()) {
 					outf << "\tstatic void on_" << p.name << "_adapter(templet::actor*a, templet::base_task*t) {\n"
-						"\t\t((" << a.name << "*)a)->on_" << p.name << "(*(templet::" << p.name_type << "_task*)t);\n";
+						"\t\t((" << a.name << "*)a)->on_" << p.name << "(*(templet::" << p.name_type << "_task*)t);}\n";
 				}
 				else {
 					outf << "\tstatic void on_" << p.name << "_adapter(templet::actor*a, templet::base_task*t) {\n"
-						"\t\t((" << a.name << "*)a)->on_" << p.name << "(*(" << p.task_type << "*)t);\n";
+						"\t\t((" << a.name << "*)a)->on_" << p.name << "(*(" << p.task_type << "*)t);}\n";
 				}
+				task_engine_types.insert(p.name_type);
 			}
 		}
 
@@ -191,7 +196,11 @@ void generate(ofstream&outf, list<actor>&alist)
 			outf << "\t" << a.name << "(templet::engine&e):templet::actor(e) {\n";
 	    }
 		else {
-			outf << "\t" << a.name << "(templet::engine&e):templet::actor(e)";
+			outf << "\t" << a.name << "(templet::engine&e";
+			for (set<string>::iterator it = task_engine_types.begin(); it != task_engine_types.end(); it++) {
+				outf << ",templet::" << *it << "_engine&te_" << *it;
+			}
+			outf << "):templet::actor(e)";
 
 			for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
 				port& p = *it;
@@ -217,7 +226,7 @@ void generate(ofstream&outf, list<actor>&alist)
 
 		if (a.initially_active) {
 			outf << endl;
-			outf << "\tvoid on_start(){\n"
+			outf << "\tvoid start(){\n"
 				"/*$TET$" << a.name << "$start*/\n"
 				"/*$TET$*/\n"
 				"\t}\n";

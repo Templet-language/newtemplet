@@ -1,5 +1,15 @@
 /*$TET$$header*/
+#include <xtemplet.hpp>
 
+class number: public templet::message {
+public:
+	number(templet::actor*a, templet::message_adaptor ma):templet::message(a, ma) {}
+};
+
+class sinetask : public templet::base_task {
+public:
+	sinetask(templet::base_engine&te, templet::actor*a, templet::task_adaptor ta):base_task(te,a,ta){}
+};
 /*$TET$*/
 
 #pragma templet !master(cw!number,sw!number)
@@ -18,7 +28,7 @@ struct master :public templet::actor {
 /*$TET$*/
 	}
 
-	void on_start(){
+	void start(){
 /*$TET$master$start*/
 /*$TET$*/
 	}
@@ -40,15 +50,15 @@ struct master :public templet::actor {
 /*$TET$*/
 };
 
-#pragma templet cworker(cw?number,t:base.mytask)
+#pragma templet cworker(cw?number,t:base)
 
 struct cworker :public templet::actor {
 	static void on_cw_adapter(templet::actor*a, templet::message*m) {
 		((cworker*)a)->on_cw(*(number*)m);}
 	static void on_t_adapter(templet::actor*a, templet::base_task*t) {
-		((cworker*)a)->on_t(*(mytask*)t);
+		((cworker*)a)->on_t(*(templet::base_task*)t);}
 
-	cworker(templet::engine&e):templet::actor(e),
+	cworker(templet::engine&e,templet::base_engine&te_base):templet::actor(e),
 		t(te_base, this, &on_t_adapter)
 	{
 /*$TET$cworker$cworker*/
@@ -60,27 +70,27 @@ struct cworker :public templet::actor {
 /*$TET$*/
 	}
 
-	inline void on_t(mytask&t) {
+	inline void on_t(templet::base_task&t) {
 /*$TET$cworker$t*/
 /*$TET$*/
 	}
 
 	void cw(number&m) { m.bind(this, &on_cw_adapter); }
-	mytask t;
+	templet::base_task t;
 
 /*$TET$cworker$$footer*/
 /*$TET$*/
 };
 
-#pragma templet sworker(sw?number,t:base)
+#pragma templet sworker(sw?number,t:base.sinetask)
 
 struct sworker :public templet::actor {
 	static void on_sw_adapter(templet::actor*a, templet::message*m) {
 		((sworker*)a)->on_sw(*(number*)m);}
 	static void on_t_adapter(templet::actor*a, templet::base_task*t) {
-		((sworker*)a)->on_t(*(templet::base_task*)t);
+		((sworker*)a)->on_t(*(sinetask*)t);}
 
-	sworker(templet::engine&e):templet::actor(e),
+	sworker(templet::engine&e,templet::base_engine&te_base):templet::actor(e),
 		t(te_base, this, &on_t_adapter)
 	{
 /*$TET$sworker$sworker*/
@@ -92,17 +102,21 @@ struct sworker :public templet::actor {
 /*$TET$*/
 	}
 
-	inline void on_t(templet::base_task&t) {
+	inline void on_t(sinetask&t) {
 /*$TET$sworker$t*/
 /*$TET$*/
 	}
 
 	void sw(number&m) { m.bind(this, &on_sw_adapter); }
-	templet::base_task t;
+	sinetask t;
 
 /*$TET$sworker$$footer*/
 /*$TET$*/
 };
 
 /*$TET$$footer*/
+int main()
+{
+	return 1;
+}
 /*$TET$*/
