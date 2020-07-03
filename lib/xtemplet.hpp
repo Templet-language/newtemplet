@@ -13,24 +13,48 @@
 /*  See the License for the specific language governing permissions and     */
 /*  limitations under the License.                                          */
 /*--------------------------------------------------------------------------*/
+#pragma once
+
+#if   defined(TEMPLET_CPP_SYNC)
+#include <mutex>
+#elif defined(TEMPLET_OMP_SYNC)
+#include <omp.h>
+#endif
 
 namespace templet{
 	
 	class message;
 	class actor;
 	class engine;
+	class task{};
+
 	class base_engine;
 	class base_task;
 
-	class mutex_stub {
+#if defined(TEMPLET_CPP_SYNC)
+	class mutex_mock : public std::mutex {};
+#elif defined(TEMPLET_OMP_SYNC)
+	class mutex_mock {
 	public:
-		bool try_lock(){}
-		void lock(){}
-		void unlock(){}
+		mutex_mock() { omp_init_lock(&a_lock); }
+		~mutex_mock() { omp_destroy_lock(&a_lock); }
+		inline bool try_lock() { return omp_test_lock(&a_lock)!=0; }
+		inline void lock() { while(!omp_test_lock(&a_lock)); }
+		inline void unlock() { omp_unset_lock(&a_lock); }
+	private:
+		omp_lock_t a_lock;
 	};
+#else
+	class mutex_mock {
+	public:
+		inline bool try_lock(){}
+		inline void lock(){}
+		inline void unlock(){}
+	};
+#endif
 
 	typedef void(*message_adaptor)(actor*, message*);
-	typedef void(*task_adaptor)(actor*, base_task*);
+	typedef void(*task_adaptor)(actor*, task*);
 
 	class message {
 	public:
@@ -42,9 +66,10 @@ namespace templet{
 
 	class actor {
 	public:
-		actor(engine&){}
+		actor(engine&,bool active=false){}
 		bool access(message&) const { return false; }
 		bool access(message*) const { return false; }
+		virtual void start() {};
 		void suspend(){}
 		void resume(){}
 	};
@@ -54,9 +79,12 @@ namespace templet{
 		engine(){}
 		~engine(){}
 		bool dispatch(){}
+	private:
+		mutex_mock lock1;
+		mutex_mock lock2;
 	};
 
-	class base_task {
+	class base_task: task {
 	public:
 		base_task(base_engine&, actor*, task_adaptor){}
 		virtual void run(){}
@@ -64,6 +92,7 @@ namespace templet{
 	};
 
 	class base_engine {
+	public:
 		base_engine(){}
 		~base_engine(){}
 		void run(){}

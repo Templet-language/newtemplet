@@ -158,7 +158,28 @@ void generate(ofstream&outf, list<actor>&alist)
 	set<string> task_engine_types;
 
 	outf << "/*$TET$$header*/\n"
-	        "/*$TET$*/\n";
+
+		"//--------------hints---------------------------------------------\n"
+		"//---include Templet library files---\n"
+		"//#include <templet.hpp>\n"
+		"//#include <teverest.hpp>\n"
+		"//#include <temula.hpp>\n"
+		"//------------- message sample -----------------------------------\n" 
+		"//class user_message : public templet::message {\n"
+		"//public:\n"
+		"//\tuser_message(templet::actor*a, templet::message_adaptor ma) :templet::message(a, ma) {}\n"
+		"//\t---put your data fields here---\n"
+		"//};\n"
+		"//\n"
+		"//------------- task sample --------------------------------------\n"
+		"//---replace 'base' with the proper task system name, if needed---\n"  
+		"//class user_task : public templet::base_task {\n"
+		"//public:\n"
+		"//\tuser_task(templet::base_engine&te, templet::actor*a, templet::task_adaptor ta) :base_task(te, a, ta) {}\n"
+		"//\t---put your data fields and methods here---\n"
+		"//};\n"
+
+	    "/*$TET$*/\n";
 
 	outf << endl;
 
@@ -179,11 +200,11 @@ void generate(ofstream&outf, list<actor>&alist)
 			}
 			else if (p.type == port::TASK) {
 				if (p.task_type.empty()) {
-					outf << "\tstatic void on_" << p.name << "_adapter(templet::actor*a, templet::base_task*t) {\n"
+					outf << "\tstatic void on_" << p.name << "_adapter(templet::actor*a, templet::task*t) {\n"
 						"\t\t((" << a.name << "*)a)->on_" << p.name << "(*(templet::" << p.name_type << "_task*)t);}\n";
 				}
 				else {
-					outf << "\tstatic void on_" << p.name << "_adapter(templet::actor*a, templet::base_task*t) {\n"
+					outf << "\tstatic void on_" << p.name << "_adapter(templet::actor*a, templet::task*t) {\n"
 						"\t\t((" << a.name << "*)a)->on_" << p.name << "(*(" << p.task_type << "*)t);}\n";
 				}
 				task_engine_types.insert(p.name_type);
@@ -193,14 +214,14 @@ void generate(ofstream&outf, list<actor>&alist)
 		outf << endl;
 
 		if (a.ports.empty()){
-			outf << "\t" << a.name << "(templet::engine&e):templet::actor(e) {\n";
+			outf << "\t" << a.name << "(templet::engine&e):templet::actor(e,"<< (a.initially_active ?"true":"false") <<") {\n";
 	    }
 		else {
 			outf << "\t" << a.name << "(templet::engine&e";
 			for (set<string>::iterator it = task_engine_types.begin(); it != task_engine_types.end(); it++) {
 				outf << ",templet::" << *it << "_engine&te_" << *it;
 			}
-			outf << "):templet::actor(e)";
+			outf << "):templet::actor(e," << (a.initially_active ? "true" : "false") << ")";
 
 			for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
 				port& p = *it;
