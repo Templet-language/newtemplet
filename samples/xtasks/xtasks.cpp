@@ -2,6 +2,7 @@
 
 #include <xtemplet.hpp>
 #include <cmath>
+#include <iostream>
 
 class number : public templet::message {
 public:
@@ -33,21 +34,26 @@ struct master :public templet::actor {
 		sw(this, &on_sw_adapter)
 	{
 /*$TET$master$master*/
+		x = 0.0;
 /*$TET$*/
 	}
 
 	void start(){
 /*$TET$master$start*/
+		cw.num = sw.num = x;
+		cw.send(); sw.send();
 /*$TET$*/
 	}
 
 	inline void on_cw(number&m) {
 /*$TET$master$cw*/
+		sum_sin2x_and_cos2x();
 /*$TET$*/
 	}
 
 	inline void on_sw(number&m) {
 /*$TET$master$sw*/
+		sum_sin2x_and_cos2x();
 /*$TET$*/
 	}
 
@@ -55,6 +61,15 @@ struct master :public templet::actor {
 	number sw;
 
 /*$TET$master$$footer*/
+	void sum_sin2x_and_cos2x() {
+		if (access(cw) && access(sw)) {
+			sin2x_and_cos2x = sw.num + cw.num;
+			stop();
+		}
+	}
+
+	double x;
+	double sin2x_and_cos2x;
 /*$TET$*/
 };
 
@@ -70,16 +85,22 @@ struct cworker :public templet::actor {
 		t(te_base, this, &on_t_adapter)
 	{
 /*$TET$cworker$cworker*/
+		_cw = 0;
 /*$TET$*/
 	}
 
 	inline void on_cw(number&m) {
 /*$TET$cworker$cw*/
+		_cw = &m;
+		t.submit();
 /*$TET$*/
 	}
 
 	inline void on_t(templet::base_task&t) {
 /*$TET$cworker$t*/
+		double num;
+		_cw->num = (num = cos(_cw->num))*num;
+		_cw->send();
 /*$TET$*/
 	}
 
@@ -87,6 +108,7 @@ struct cworker :public templet::actor {
 	templet::base_task t;
 
 /*$TET$cworker$$footer*/
+	number* _cw;
 /*$TET$*/
 };
 
@@ -102,16 +124,21 @@ struct sworker :public templet::actor {
 		t(te_base, this, &on_t_adapter)
 	{
 /*$TET$sworker$sworker*/
+		_sw = 0;
 /*$TET$*/
 	}
 
 	inline void on_sw(number&m) {
 /*$TET$sworker$sw*/
+		_sw = &m;
+		t.submit_arg(m.num);
 /*$TET$*/
 	}
 
 	inline void on_t(sinetask&t) {
 /*$TET$sworker$t*/
+		_sw->num = t.get_result();
+		_sw->send();
 /*$TET$*/
 	}
 
@@ -119,6 +146,7 @@ struct sworker :public templet::actor {
 	sinetask t;
 
 /*$TET$sworker$$footer*/
+	number* _sw;
 /*$TET$*/
 };
 
@@ -136,9 +164,17 @@ int main()
 	a_cos_worker.cw(a_master.cw);
 	a_sin_worker.sw(a_master.sw);
 
+	a_master.x = (double)rand();
+	
 	e.dispatch();
 	te.run();
 
-	return 1;
+	if (e.graceful_shutdown()) {
+		std::cout << "sin2(" << a_master.x << ") + cos2(" << a_master.x << ") = " << a_master.sin2x_and_cos2x << std::endl;
+		return EXIT_SUCCESS;
+	}
+
+	std::cout << "something went wrong" << std::endl;
+	return EXIT_FAILURE;
 }
 /*$TET$*/

@@ -31,7 +31,7 @@ namespace templet{
 	class base_engine;
 	class base_task;
 
-#if defined(TEMPLET_CPP_SYNC)
+#if   defined(TEMPLET_CPP_SYNC)
 	class mutex_mock : public std::mutex {};
 #elif defined(TEMPLET_OMP_SYNC)
 	class mutex_mock {
@@ -47,7 +47,7 @@ namespace templet{
 #else
 	class mutex_mock {
 	public:
-		inline bool try_lock(){}
+		inline bool try_lock() { return true; }
 		inline void lock(){}
 		inline void unlock(){}
 	};
@@ -67,9 +67,12 @@ namespace templet{
 	class actor {
 	public:
 		actor(engine&,bool active=false){}
+		//actor(){}
+		//void init(engine&, bool active = false){}
 		bool access(message&) const { return false; }
 		bool access(message*) const { return false; }
 		virtual void start() {};
+		void stop(){}
 		void suspend(){}
 		void resume(){}
 	};
@@ -78,7 +81,8 @@ namespace templet{
 	public:
 		engine(){}
 		~engine(){}
-		bool dispatch(){}
+		void dispatch(){}
+		bool graceful_shutdown() { return false; }
 	private:
 		mutex_mock lock1;
 		mutex_mock lock2;
