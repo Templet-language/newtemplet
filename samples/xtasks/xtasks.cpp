@@ -12,7 +12,8 @@ public:
 
 class sinetask : protected templet::base_task {
 public:
-	sinetask(templet::base_engine&te, templet::actor*a, templet::task_adaptor ta) :base_task(te, a, ta) {}
+	sinetask(templet::actor*a, templet::task_adaptor ta) :base_task(a, ta) {}
+	void engine(templet::base_engine&te) { templet::base_task::engine(te); }
 	void submit_arg(double n) { num = n; submit(); }
 	double get_result() { return num; }
 private:
@@ -29,7 +30,11 @@ struct master :public templet::actor {
 	static void on_sw_adapter(templet::actor*a, templet::message*m) {
 		((master*)a)->on_sw(*(number*)m);}
 
-	master(templet::engine&e):templet::actor(e,true),
+	master(templet::engine&e) :master() {
+		master::engines(e);
+	}
+
+	master() :templet::actor(true),
 		cw(this, &on_cw_adapter),
 		sw(this, &on_sw_adapter)
 	{
@@ -38,7 +43,13 @@ struct master :public templet::actor {
 /*$TET$*/
 	}
 
-	void start(){
+	void engines(templet::engine&e) {
+		templet::actor::engine(e);
+/*$TET$master$engines*/
+/*$TET$*/
+	}
+
+	void start() {
 /*$TET$master$start*/
 		cw.num = sw.num = x;
 		cw.send(); sw.send();
@@ -81,11 +92,22 @@ struct cworker :public templet::actor {
 	static void on_t_adapter(templet::actor*a, templet::task*t) {
 		((cworker*)a)->on_t(*(templet::base_task*)t);}
 
-	cworker(templet::engine&e,templet::base_engine&te_base):templet::actor(e,false),
-		t(te_base, this, &on_t_adapter)
+	cworker(templet::engine&e,templet::base_engine&te_base) :cworker() {
+		cworker::engines(e,te_base);
+	}
+
+	cworker() :templet::actor(false),
+		t(this, &on_t_adapter)
 	{
 /*$TET$cworker$cworker*/
 		_cw = 0;
+/*$TET$*/
+	}
+
+	void engines(templet::engine&e,templet::base_engine&te_base) {
+		templet::actor::engine(e);
+		t.engine(te_base);
+/*$TET$cworker$engines*/
 /*$TET$*/
 	}
 
@@ -120,11 +142,22 @@ struct sworker :public templet::actor {
 	static void on_t_adapter(templet::actor*a, templet::task*t) {
 		((sworker*)a)->on_t(*(sinetask*)t);}
 
-	sworker(templet::engine&e,templet::base_engine&te_base):templet::actor(e,false),
-		t(te_base, this, &on_t_adapter)
+	sworker(templet::engine&e,templet::base_engine&te_base) :sworker() {
+		sworker::engines(e,te_base);
+	}
+
+	sworker() :templet::actor(false),
+		t(this, &on_t_adapter)
 	{
 /*$TET$sworker$sworker*/
 		_sw = 0;
+/*$TET$*/
+	}
+
+	void engines(templet::engine&e,templet::base_engine&te_base) {
+		templet::actor::engine(e);
+		t.engine(te_base);
+/*$TET$sworker$engines*/
 /*$TET$*/
 	}
 
@@ -159,10 +192,12 @@ int main()
 
 	master  a_master(e);
 	cworker a_cos_worker(e, te);
-	sworker a_sin_worker(e, te);
+	sworker a_sin_worker[1];
+
+	a_sin_worker[0].engines(e, te);
 
 	a_cos_worker.cw(a_master.cw);
-	a_sin_worker.sw(a_master.sw);
+	a_sin_worker[0].sw(a_master.sw);
 
 	a_master.x = (double)rand();
 	

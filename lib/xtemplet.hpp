@@ -66,12 +66,13 @@ namespace templet{
 
 	class actor {
 	public:
-		actor(engine&,bool active=false){}
-		//actor(){}
-		//void init(engine&, bool active = false){}
+		actor(bool active=false){}
+	protected:
+		void engine(engine&);
+		virtual void start() {};
+	public:
 		bool access(message&) const { return false; }
 		bool access(message*) const { return false; }
-		virtual void start() {};
 		void stop(){}
 		void suspend(){}
 		void resume(){}
@@ -90,9 +91,11 @@ namespace templet{
 
 	class base_task: task {
 	public:
-		base_task(base_engine&, actor*, task_adaptor){}
-		virtual void run(){}
+		base_task(actor*,task_adaptor){}
+		void engine(base_engine&);
 		void submit(){}
+	protected:
+		virtual void run(){}
 	};
 
 	class base_engine {

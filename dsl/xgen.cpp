@@ -172,10 +172,11 @@ void generate(ofstream&outf, list<actor>&alist)
 		"//};\n"
 		"//\n"
 		"//------------- task sample --------------------------------------\n"
-		"//---replace 'base' with the proper task system name, if needed---\n"  
+		"//---replace 'base' with the proper task driver name, if needed---\n"  
 		"//class user_task : public templet::base_task {\n"
 		"//public:\n"
-		"//\tuser_task(templet::base_engine&te, templet::actor*a, templet::task_adaptor ta) :base_task(te, a, ta) {}\n"
+		"//\tuser_task(templet::actor*a, templet::task_adaptor ta) :base_task(a, ta) {}\n"
+		"//\tengine(templet::base_engine&te){ templet::base_task::engine(te); }\n"
 		"//\t---put your data fields and methods here---\n"
 		"//};\n"
 
@@ -213,41 +214,68 @@ void generate(ofstream&outf, list<actor>&alist)
 
 		outf << endl;
 
-		if (a.ports.empty()){
-			outf << "\t" << a.name << "(templet::engine&e):templet::actor(e,"<< (a.initially_active ?"true":"false") <<") {\n";
-	    }
+		outf << "\t" << a.name << "(templet::engine&e";
+		for (set<string>::iterator it = task_engine_types.begin(); it != task_engine_types.end(); it++) {
+			outf << ",templet::" << *it << "_engine&te_" << *it;
+		}
+		outf << ") :"<< a.name <<"() ";
+		outf << "{\n";
+		
+		outf << "\t\t" << a.name << "::engines(e";
+		for (set<string>::iterator it = task_engine_types.begin(); it != task_engine_types.end(); it++) {
+			outf << ",te_" << *it;
+		}
+		outf << ");\n\t}\n";
+
+		outf << endl;
+
+		if (a.ports.empty()) {
+			outf << "\t" << a.name << "() :templet::actor(" << (a.initially_active ? "true" : "false") << ") {\n";
+		}
 		else {
-			outf << "\t" << a.name << "(templet::engine&e";
-			for (set<string>::iterator it = task_engine_types.begin(); it != task_engine_types.end(); it++) {
-				outf << ",templet::" << *it << "_engine&te_" << *it;
-			}
-			outf << "):templet::actor(e," << (a.initially_active ? "true" : "false") << ")";
+			outf << "\t" << a.name << "() :templet::actor(" << (a.initially_active ? "true" : "false") << ")";
 
 			for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
 				port& p = *it;
 
-				if (p.type == port::CLIENT) {
+				if (p.type == port::CLIENT || p.type == port::TASK) {
 					outf << ",\n";
 					outf << "\t\t" << p.name << "(this, &on_" << p.name << "_adapter)";
-				}
-				else if (p.type == port::TASK) {
-					outf << ",\n";
-					outf << "\t\t" << p.name << "(te_" << p.name_type << ", this, &on_" << p.name << "_adapter)";
 				}
 
 			}
 
 			outf << "\n\t{\n";
 		}
-		
+
 		outf <<
-		"/*$TET$" << a.name << "$" << a.name << "*/\n"
-		"/*$TET$*/\n"
-		"\t}\n";
+			"/*$TET$" << a.name << "$" << a.name << "*/\n"
+			"/*$TET$*/\n"
+			"\t}\n";
+
+		outf << endl;
+
+		outf << "\tvoid engines(templet::engine&e";
+		for (set<string>::iterator it = task_engine_types.begin(); it != task_engine_types.end(); it++) {
+			outf << ",templet::" << *it << "_engine&te_" << *it;
+		}
+		outf << ") {\n";
+
+		outf << "\t\ttemplet::actor::engine(e);\n";
+
+		for (std::list<port>::iterator it = a.ports.begin(); it != a.ports.end(); it++) {
+			port& p = *it;
+			if (p.type == port::TASK) outf << "\t\t" << p.name << ".engine(te_" << p.name_type << ");\n";
+		}
+
+		outf <<
+			"/*$TET$" << a.name << "$engines*/\n"
+			"/*$TET$*/\n"
+			"\t}\n";
 
 		if (a.initially_active) {
 			outf << endl;
-			outf << "\tvoid start(){\n"
+			outf << "\tvoid start() {\n"
 				"/*$TET$" << a.name << "$start*/\n"
 				"/*$TET$*/\n"
 				"\t}\n";
