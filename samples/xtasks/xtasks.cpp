@@ -200,7 +200,7 @@ int main()
 	a_sin_worker[0].sw(a_master.sw);
 
 	a_master.x = (double)rand();
-	
+
 	e.dispatch();
 	te.run();
 
