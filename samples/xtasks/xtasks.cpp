@@ -4,9 +4,22 @@
 #include <cmath>
 #include <iostream>
 
+//templet.hpp
+//simpsym.hpp
+//everest.hpp
+/////////////
+//deepsym.hpp
+//omptask.hpp
+//cpptask.hpp
+//mpitask.hpp
+//curltsk.hpp
+//boinctk.hpp
+//condort.hpp
+
 class number : public templet::message {
 public:
 	number(templet::actor*a, templet::message_adaptor ma) :templet::message(a, ma) {}
+	number() :templet::message() {}
 	double num;
 };
 
@@ -22,7 +35,7 @@ private:
 };
 /*$TET$*/
 
-#pragma templet !master(cw!number,sw!number)
+#pragma templet !master(cw?number,sw!number)
 
 struct master :public templet::actor {
 	static void on_cw_adapter(templet::actor*a, templet::message*m) {
@@ -35,7 +48,6 @@ struct master :public templet::actor {
 	}
 
 	master() :templet::actor(true),
-		cw(this, &on_cw_adapter),
 		sw(this, &on_sw_adapter)
 	{
 /*$TET$master$master*/
@@ -51,8 +63,8 @@ struct master :public templet::actor {
 
 	void start() {
 /*$TET$master$start*/
-		cw.num = sw.num = x;
-		cw.send(); sw.send();
+		_cw.num = sw.num = x;
+		_cw.send(); sw.send();
 /*$TET$*/
 	}
 
@@ -68,17 +80,18 @@ struct master :public templet::actor {
 /*$TET$*/
 	}
 
-	number cw;
+	void cw(number&m) { m.bind(this, &on_cw_adapter); }
 	number sw;
 
 /*$TET$master$$footer*/
 	void sum_sin2x_and_cos2x() {
-		if (access(cw) && access(sw)) {
-			sin2x_and_cos2x = sw.num + cw.num;
+		if (access(_cw) && access(sw)) {
+			sin2x_and_cos2x = sw.num + _cw.num;
 			stop();
 		}
 	}
 
+	number _cw;
 	double x;
 	double sin2x_and_cos2x;
 /*$TET$*/
@@ -101,6 +114,7 @@ struct cworker :public templet::actor {
 	{
 /*$TET$cworker$cworker*/
 		_cw = 0;
+		_master = 0;
 /*$TET$*/
 	}
 
@@ -122,6 +136,7 @@ struct cworker :public templet::actor {
 /*$TET$cworker$t*/
 		double num;
 		_cw->num = (num = cos(_cw->num))*num;
+		_cw->bind(_master,master::on_cw_adapter);
 		_cw->send();
 /*$TET$*/
 	}
@@ -130,6 +145,7 @@ struct cworker :public templet::actor {
 	templet::base_task t;
 
 /*$TET$cworker$$footer*/
+	templet::actor*  _master;
 	number* _cw;
 /*$TET$*/
 };
@@ -196,8 +212,9 @@ int main()
 
 	a_sin_worker[0].engines(e, te);
 
-	a_cos_worker.cw(a_master.cw);
+	a_cos_worker.cw(a_master._cw);
 	a_sin_worker[0].sw(a_master.sw);
+	a_cos_worker._master = &a_master;
 
 	a_master.x = (double)rand();
 
