@@ -67,42 +67,45 @@ namespace templet{
 		friend class engine;
 		friend class actor;
 	public:
-		message(actor*a, message_adaptor ma) :_forward(true), 
-			_cli_actor(a), _cli_adaptor(ma),
-			_srv_actor(0), _srv_adaptor(0) {}
-		message() :_forward(true), 
-			_cli_actor(0), _cli_adaptor(0),
-			_srv_actor(0), _srv_adaptor(0) {}
+		message(actor*a=0, message_adaptor ma=0) :_from_cli_to_srv(true),
+			_cli_actor(a),  _cli_adaptor(ma),
+			_srv_actor(0),  _srv_adaptor(0),
+			_active(false), _actor(a) {}
+		void actor(templet::actor*a) { assert(a == 0); _actor = a; }
 		void send();
-		void bind(actor*a, message_adaptor ma) {
-			_forward = true; _srv_actor = a; _srv_adaptor = ma;
+		void bind(templet::actor*a, message_adaptor ma) {
+			_from_cli_to_srv = true; _srv_actor = a; _srv_adaptor = ma;
 		}
 	private:
-		bool  _forward;
-		bool  _idle;
-		actor* _cli_actor;
-		actor* _srv_actor;
+		bool _active;
+		templet::actor* _actor;
+
+		bool _from_cli_to_srv;
+		templet::actor* _cli_actor;
+		templet::actor* _srv_actor;
 		message_adaptor _cli_adaptor;
 		message_adaptor _srv_adaptor;
 	};
 
 	class actor {
+		friend class engine;
 	public:
-		actor(bool active=false) :_suspended(false), _active(active), _engine(0) {}
+		actor(bool start=false) :_suspended(false), _do_start(start), _engine(0) {}
 	protected:
 		void engine(templet::engine&e);
 		void engine(templet::engine*e);
 		virtual void start() {};
 	public:
-		bool access(message&m) const { return m._idle && (m._forward ? m._cli_actor==this : m._srv_actor == this); }
-		bool access(message*m) const { return m->_idle && (m->_forward ? m->_cli_actor == this : m->_srv_actor == this); }
+		bool access(message&m) const { return !m._active  && m._actor == this; }
+		bool access(message*m) const { return m && !m->_active && m->_actor == this; }
 		void stop();
 		void suspend() { _suspended = true; }
 		void resume();
 	private:
 		bool _suspended;
-		bool _active;
-		std::list<message*> _wait_queue;
+		bool _do_start;
+		std::list<message*> _inbound;
+		std::list<message*> _outbound;
 		templet::engine*    _engine;
 	};
 	
@@ -110,42 +113,68 @@ namespace templet{
 		friend class message;
 		friend class actor;
 	public:
-		engine() : _stopped(true) {}
+		engine() : _stopped(false), _started(false) {}
 		~engine(){}
 
 		void dispatch(){
-			_stopped = false;
+			if (!_started) {
+				for (std::list<actor*>::iterator it = _start_list.begin(); it != _start_list.end(); it++)
+					(*it)->start();
+				_started = true;
+			}
 			///////////////////////////////////////
 		}
 
-		bool graceful_shutdown() { return (_stopped && _ready.empty()); }
+		bool graceful_shutdown() { return _stopped; }
 
 	private:
 		mutex_mock _lock1;
 		mutex_mock _lock2;
 		bool _stopped;
-		std::list<message*> _ready;
-		std::list<actor*>  _active;
+		bool _started;
+		std::list<message*> _on_delivery;
+		std::list<actor*>   _start_list;
 
 	private:
-		inline static void send(message*m, actor*a) {
+		inline static void send(message*m) {
 			////////////////////////////////////////
 		}
 
-		inline static void resume(actor*) {
-			////////////////////////////////////////
+		inline static void resume(actor*a) {
+/*			lock(lock_1);
+
+			put_local_messages_to_queue();
+
+		try_to_be_the_master:
+			if (try_lock(lock_2)) {
+
+				unlock(lock_1);
+
+				while (message_in_queue())process_message();
+
+				unlock(lock_2);
+			}
+			else {
+				unlock(lock_1);
+				return;
+			}
+
+			lock(lock_1);
+
+			if (!message_in_queue()) {
+				unlock(lock_1);
+				return;
+			}
+			else goto try_to_be_the_master;
+*/
 		}
 	};
 
-	void message::send() {
-		if (_forward) engine::send(this, _srv_actor);
-		else engine::send(this, _cli_actor);
-	}
-
-	void actor::engine(templet::engine&e) { _engine = &e; _engine->_active.push_back(this); }
-	void actor::engine(templet::engine*e) { _engine = e; _engine->_active.push_back(this);	}
+	void message::send() {	engine::send(this); }
+	void actor::engine(templet::engine&e) { _engine = &e; if(this->_do_start)_engine->_start_list.push_back(this); }
+	void actor::engine(templet::engine*e) { _engine = e; if(this->_do_start)_engine->_start_list.push_back(this);	}
 	void actor::stop() { _engine->_stopped = true;	}
-	void actor::resume() { _suspended = false; engine::resume(this); } /////////////////////////////////// ???
+	void actor::resume() { engine::resume(this); }
 
 	class base_task: task {
 		friend class base_engine;

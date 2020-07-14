@@ -18,8 +18,7 @@
 
 class number : public templet::message {
 public:
-	number(templet::actor*a, templet::message_adaptor ma) :templet::message(a, ma) {}
-	number() :templet::message() {}
+	number(templet::actor*a=0, templet::message_adaptor ma=0) :templet::message(a, ma) {}
 	double num;
 };
 
@@ -52,6 +51,7 @@ struct master :public templet::actor {
 	{
 /*$TET$master$master*/
 		x = 0.0;
+		_cw.actor(this);
 /*$TET$*/
 	}
 
@@ -84,6 +84,7 @@ struct master :public templet::actor {
 	number sw;
 
 /*$TET$master$$footer*/
+
 	void sum_sin2x_and_cos2x() {
 		if (access(_cw) && access(sw)) {
 			sin2x_and_cos2x = sw.num + _cw.num;
