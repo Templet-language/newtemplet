@@ -17,6 +17,7 @@
 
 #include <vector>
 #include <list>
+#include <queue>
 #include <cstdlib>
 #include <cassert>
 
@@ -79,6 +80,7 @@ namespace templet{
 	private:
 		bool _active;
 		templet::actor* _actor;
+		message_adaptor _adaptor;
 
 		bool _from_cli_to_srv;
 		templet::actor* _cli_actor;
@@ -90,7 +92,7 @@ namespace templet{
 	class actor {
 		friend class engine;
 	public:
-		actor(bool start=false) :_suspended(false), _do_start(start), _engine(0) {}
+		actor(bool start_it=false) :_suspended(false), _start_it(start_it), _engine(0) {}
 	protected:
 		void engine(templet::engine&e);
 		void engine(templet::engine*e);
@@ -99,14 +101,14 @@ namespace templet{
 		bool access(message&m) const { return !m._active  && m._actor == this; }
 		bool access(message*m) const { return m && !m->_active && m->_actor == this; }
 		void stop();
-		void suspend() { _suspended = true; }
+		void suspend() { assert(!_suspended); _suspended = true; }
 		void resume();
 	private:
 		bool _suspended;
-		bool _do_start;
-		std::list<message*> _inbound;
-		std::list<message*> _outbound;
-		templet::engine*    _engine;
+		bool _start_it;
+		std::queue<message*> _inbound;
+		std::queue<message*> _outbound;
+		templet::engine*     _engine;
 	};
 	
 	class engine {
@@ -116,63 +118,122 @@ namespace templet{
 		engine() : _stopped(false), _started(false) {}
 		~engine(){}
 
-		void dispatch(){
+		void start(){
 			if (!_started) {
 				for (std::list<actor*>::iterator it = _start_list.begin(); it != _start_list.end(); it++)
 					(*it)->start();
+
+				_lock_1.lock();
+
+				while (!_queue_2.empty()) {
+					message*m = _queue_2.front(); _queue_2.pop();
+					recv(m);
+					if (_stopped) break;
+				}
+
+				_lock_1.unlock();
+
 				_started = true;
 			}
-			///////////////////////////////////////
 		}
 
 		bool graceful_shutdown() { return _stopped; }
 
 	private:
-		mutex_mock _lock1;
-		mutex_mock _lock2;
+		mutex_mock _lock_1;
+		mutex_mock _lock_2;
 		bool _stopped;
 		bool _started;
-		std::list<message*> _on_delivery;
-		std::list<actor*>   _start_list;
+		std::list<actor*>    _start_list;
+		std::queue<actor*>   _queue_1;
+		std::queue<message*> _queue_2;
 
 	private:
 		inline static void send(message*m) {
-			////////////////////////////////////////
+			assert(!m->_active);
+			
+			actor* sender_actor = m->_actor;
+
+			m->_active = true;
+			m->_actor = (m->_from_cli_to_srv ? m->_srv_actor : m->_cli_actor);
+			m->_adaptor = (m->_from_cli_to_srv ? m->_srv_adaptor : m->_cli_adaptor);
+
+			if (sender_actor->_suspended) 
+				sender_actor->_outbound.push(m);
+			else {
+				engine* eng = sender_actor->_engine;
+				eng->_queue_2.push(m);
+			}
+
+		}
+
+		inline static void recv(message*m) {
+			actor* receiver_actor = m->_actor;
+
+			if (receiver_actor->_suspended)
+				receiver_actor->_inbound.push(m);
+			else {
+				m->_active = false;
+				m->_from_cli_to_srv = !m->_from_cli_to_srv;
+				(*m->_adaptor)(receiver_actor,m);
+			}
 		}
 
 		inline static void resume(actor*a) {
-/*			lock(lock_1);
+			engine* eng = a->_engine;
 
-			put_local_messages_to_queue();
+			eng->_lock_1.lock();
 
-		try_to_be_the_master:
-			if (try_lock(lock_2)) {
+			eng->_queue_1.push(a);
 
-				unlock(lock_1);
+		try_get_the_control:
+			if (eng->_lock_2.try_lock()) {
 
-				while (message_in_queue())process_message();
+				while (!eng->_queue_1.empty()) {
+					actor* a = eng->_queue_1.front(); eng->_queue_1.pop();
 
-				unlock(lock_2);
+					while (!a->_outbound.empty()) {
+						message*m = a->_outbound.front(); a->_outbound.pop();
+						eng->_queue_2.push(m);
+					}
+
+					while (!a->_inbound.empty()) {
+						message*m = a->_inbound.front(); a->_inbound.pop();
+						eng->_queue_2.push(m);
+					}
+
+					a->_suspended = false;
+				}
+
+				eng->_lock_1.unlock();
+
+				while (!eng->_queue_2.empty()) {
+					message*m = eng->_queue_2.front(); eng->_queue_2.pop();
+					recv(m);
+					if (eng->_stopped) { eng->_lock_2.unlock(); return; }
+				}
+
+				eng->_lock_2.unlock();
 			}
 			else {
-				unlock(lock_1);
+				eng->_lock_1.unlock();
 				return;
 			}
 
-			lock(lock_1);
+			eng->_lock_1.lock();
 
-			if (!message_in_queue()) {
-				unlock(lock_1);
+			if (eng->_queue_1.empty()) {
+				eng->_lock_1.unlock();
 				return;
 			}
-			else goto try_to_be_the_master;
-*/
+			else
+				goto try_get_the_control;
 		}
 	};
 
 	void message::send() {	engine::send(this); }
-	void actor::engine(templet::engine&e) { _engine = &e; if(this->_do_start)_engine->_start_list.push_back(this); }
-	void actor::engine(templet::engine*e) { _engine = e; if(this->_do_start)_engine->_start_list.push_back(this);	}
+	void actor::engine(templet::engine&e) { _engine = &e; if(this->_start_it)_engine->_start_list.push_back(this); }
+	void actor::engine(templet::engine*e) { _engine = e; if(this->_start_it)_engine->_start_list.push_back(this);	}
 	void actor::stop() { _engine->_stopped = true;	}
 	void actor::resume() { engine::resume(this); }
 
@@ -210,5 +271,5 @@ namespace templet{
 		std::vector<base_task*> _task_queue;
 	};
 
-	void base_task::submit() { assert(_engine && !_submitted); _engine->_task_queue.push_back(this); _submitted = true; }
+	void base_task::submit() { assert(_engine && !_submitted); _actor->suspend(); _engine->_task_queue.push_back(this); _submitted = true;  }
 }

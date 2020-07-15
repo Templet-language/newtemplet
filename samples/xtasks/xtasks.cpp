@@ -9,6 +9,7 @@
 //everest.hpp
 /////////////
 //deepsym.hpp
+//checker.hpp
 //omptask.hpp
 //cpptask.hpp
 //mpitask.hpp
@@ -219,7 +220,7 @@ int main()
 
 	a_master.x = (double)rand();
 
-	e.dispatch();
+	e.start();
 	te.run();
 
 	if (e.graceful_shutdown()) {
