@@ -79,11 +79,23 @@ bool parse_actor(int line, actor& a)
 
 		if (getlex(lex) && lex == "?"){ p.type = port::SERVER; }
 		else if (ungetlex() && getlex(lex) && lex == "!"){ p.type = port::CLIENT; }
+		else if (ungetlex() && getlex(lex) && lex == ":") { p.type = port::TASK; }
 		else error(line);
 
 		if (!(getlex(lex) && is_id(lex))) error(line);
 
 		p.name_type = lex;
+
+		if (p.type == port::TASK) {
+			if (getlex(lex) && lex == ".") {
+				if (!(getlex(lex) && is_id(lex))) error(line);
+				p.task_type = lex;
+			}
+			else {
+				ungetlex();
+				p.task_type.clear();
+			}
+		}
 
 		a.ports.push_back(p);
 
@@ -158,28 +170,29 @@ void generate(ofstream&outf, list<actor>&alist)
 	set<string> task_engine_types;
 
 	outf << "/*$TET$$header*/\n"
-
+		"\n"
 		"//--------------hints---------------------------------------------\n"
-		"//---include Templet library files---\n"
+		"//---include the main Templet library file---\n"
 		"//#include <templet.hpp>\n"
-		"//#include <teverest.hpp>\n"
-		"//#include <temula.hpp>\n"
+		"/---and a task driver library file(s), for example---\n"
+		"//#include <everest.hpp>\n"
+		"//\n"
 		"//------------- message sample -----------------------------------\n" 
 		"//class user_message : public templet::message {\n"
 		"//public:\n"
-		"//\tuser_message(templet::actor*a, templet::message_adaptor ma) :templet::message(a, ma) {}\n"
+		"//\tuser_message(templet::actor*a=0, templet::message_adaptor ma=0) :templet::message(a, ma) {}\n"
 		"//\t---put your data fields here---\n"
 		"//};\n"
 		"//\n"
 		"//------------- task sample --------------------------------------\n"
 		"//---replace 'base' with the proper task driver name, if needed---\n"  
-		"//class user_task : public templet::base_task {\n"
+		"//class user_task : protected templet::base_task {\n"
 		"//public:\n"
 		"//\tuser_task(templet::actor*a, templet::task_adaptor ta) :base_task(a, ta) {}\n"
-		"//\tengine(templet::base_engine&te){ templet::base_task::engine(te); }\n"
+		"//\tvoid engine(templet::base_engine&te) { templet::base_task::engine(te); }\n"
 		"//\t---put your data fields and methods here---\n"
 		"//};\n"
-
+		"\n"
 	    "/*$TET$*/\n";
 
 	outf << endl;

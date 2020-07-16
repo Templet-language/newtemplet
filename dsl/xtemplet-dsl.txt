@@ -28,115 +28,143 @@ field ::= id '!' id |
  
 #pragma templet actor_type
 
-struct actor_type: public templet::actor{
-	actor_type(templet::engine&e):templet::actor(e){
+struct actor_type :public templet::actor {
+	actor_type(templet::engine&e) :actor_type() {
+		actor_type::engines(e);
+	}
+	actor_type() :templet::actor(false) {
+		// add your code
+	}
+	void engines(templet::engine&e) {
+		templet::actor::engine(e);
 		// add your code
 	}
 		// add your code
-}
+};
 
 // 2 //
 
 #pragma templet !actor_type
 
-struct actor_type: public templet::actor{
-	actor_type(templet::engine&e):templet::actor(e){
+struct actor_type :public templet::actor {
+	actor_type(templet::engine&e) :actor_type() {
+		actor_type::engines(e);
+	}
+	actor_type() :templet::actor(true) {
 		// add your code
 	}
-	void on_start(){
+	void engines(templet::engine&e) {
+		templet::actor::engine(e);
+		// add your code
+	}
+	void start() {
 		// add your code
 	}
 		// add your code
-}
+};
 
 // 3 //
 
 #pragma templet actor_type(a_message!message_type)
 
-struct actor_type: public templet::actor{
-	static void on_a_message_adapter(templet::actor*a,templet::message*m){
-		((actor_type*)a)->on_a_message(*(message_type*)m); }
-	
-	actor_type(templet::engine&e):templet::actor(e),
+struct actor_type :public templet::actor {
+	static void on_a_message_adapter(templet::actor*a, templet::message*m) {
+		((actor_type*)a)->on_a_message(*(message_type*)m);}
+	actor_type(templet::engine&e) :actor_type() {
+		actor_type::engines(e);
+	}
+	actor_type() :templet::actor(false),
 		a_message(this, &on_a_message_adapter)
 	{
 		// add your code
 	}
-	void on_start(){
+	void engines(templet::engine&e) {
+		templet::actor::engine(e);
 		// add your code
 	}
-	void on_a_message(message_type&m){
-		// add your code	
+	inline void on_a_message(message_type&m) {
+		// add your code
 	}
 	message_type a_message;
 		// add your code
-}
+};
 
 // 4 //
 
 #pragma templet actor_type(a_message?message_type)
 
-struct actor_type: public templet::actor{
-	static void on_a_message_adapter(templet::actor*a,templet::message*m){
-		((actor_type*)a)->on_a_message(*(message_type*)m); }
-	
-	actor_type(templet::engine&e):templet::actor(e),
-		a_message(this, &on_a_message_adapter)
+struct actor_type :public templet::actor {
+	static void on_a_message_adapter(templet::actor*a, templet::message*m) {
+		((actor_type*)a)->on_a_message(*(message_type*)m);}
+	actor_type(templet::engine&e) :actor_type() {
+		actor_type::engines(e);
+	}
+	actor_type() :templet::actor(false)
 	{
 		// add your code
 	}
-	void on_start(){
+	void engines(templet::engine&e) {
+		templet::actor::engine(e);
 		// add your code
 	}
-	void on_a_message(message_type&m){
-		// add your code	
-	}
-	void a_message(message_type&m){ m.bind(this,&on_a_message_adapter); }
+	inline void on_a_message(message_type&m) {
 		// add your code
-}
+	}
+	void a_message(message_type&m) { m.bind(this, &on_a_message_adapter); }
+		// add your code
+};
 
 // 5 //
 
 #pragma templet actor_type(a_task:base)
 
-struct actor_type: public templet::actor{
-	static void on_a_task_adapter(templet::actor*a,templet::base_task*t){
-		((actor_type*)a)->on_a_task(*(templet::base_task*)t); }
-	
-	actor_type(templet::engine&e,templet::base_engine&te):templet::actor(e),
-		a_task(te_base, this, &on_a_task_adapter)
+struct actor_type :public templet::actor {
+	static void on_a_task_adapter(templet::actor*a, templet::task*t) {
+		((actor_type*)a)->on_a_task(*(templet::base_task*)t);}
+	actor_type(templet::engine&e,templet::base_engine&te_base) :actor_type() {
+		actor_type::engines(e,te_base);
+	}
+	actor_type() :templet::actor(false),
+		a_task(this, &on_a_task_adapter)
 	{
 		// add your code
 	}
-	void on_start(){
+	void engines(templet::engine&e,templet::base_engine&te_base) {
+		templet::actor::engine(e);
+		a_task.engine(te_base);
 		// add your code
 	}
-	void on_a_task(templet::base_task&t){
-		// add your code	
+	inline void on_a_task(templet::base_task&t) {
+		// add your code
 	}
 	templet::base_task a_task;
 		// add your code
-}
+};
+
 
 // 6 //
 
 #pragma templet actor_type(a_task:base.task_type)
 
-struct actor_type: public templet::actor{
-	static on_a_task_adapter(templet::actor*a,templet::base_task*t){
-		((actor_type*)a)->on_a_task(*(task_type*)t); }
-	
-	actor_type(templet::engine&e,templet::base_engine&te):templet::actor(e),
-		a_task(te_base, this, &on_a_task_adapter)
+struct actor_type :public templet::actor {
+	static void on_a_task_adapter(templet::actor*a, templet::task*t) {
+		((actor_type*)a)->on_a_task(*(task_type*)t);}
+	actor_type(templet::engine&e,templet::base_engine&te_base) :actor_type() {
+		actor_type::engines(e,te_base);
+	}
+	actor_type() :templet::actor(false),
+		a_task(this, &on_a_task_adapter)
 	{
 		// add your code
 	}
-	void on_start(){
+	void engines(templet::engine&e,templet::base_engine&te_base) {
+		templet::actor::engine(e);
+		a_task.engine(te_base);
 		// add your code
 	}
-	void on_a_task(task_type&t){
-		// add your code	
+	inline void on_a_task(task_type&t) {
+		// add your code
 	}
 	task_type a_task;
 		// add your code
-}		 		 
+}; 		 

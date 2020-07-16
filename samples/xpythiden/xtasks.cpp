@@ -1,13 +1,16 @@
 /*$TET$$header*/
 
+#define TEMPLET_OMP_SYNC
+
 #include <xtemplet.hpp>
 #include <cmath>
 #include <iostream>
+#include <ctime>
 
 //templet.hpp
-//simpsym.hpp
 //everest.hpp
 /////////////
+//simpsym.hpp
 //deepsym.hpp
 //checker.hpp
 //omptask.hpp
@@ -16,6 +19,7 @@
 //curltsk.hpp
 //boinctk.hpp
 //condort.hpp
+//...
 
 class number : public templet::message {
 public:
@@ -218,12 +222,13 @@ int main()
 	a_sin_worker[0].sw(a_master.sw);
 	a_cos_worker._master = &a_master;
 
+	srand((unsigned)time(0));
 	a_master.x = (double)rand();
 
 	e.start();
-	te.run();
+	te.wait_all();
 
-	if (e.graceful_shutdown()) {
+	if (e.stopped()) {
 		std::cout << "sin2(" << a_master.x << ") + cos2(" << a_master.x << ") = " << a_master.sin2x_and_cos2x << std::endl;
 		return EXIT_SUCCESS;
 	}

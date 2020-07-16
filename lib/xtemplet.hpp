@@ -21,8 +21,6 @@
 #include <cstdlib>
 #include <cassert>
 
-#define TEMPLET_OMP_SYNC
-
 #if   defined(TEMPLET_CPP_SYNC)
 #include <mutex>
 #elif defined(TEMPLET_OMP_SYNC)
@@ -72,7 +70,7 @@ namespace templet{
 			_cli_actor(a),  _cli_adaptor(ma),
 			_srv_actor(0),  _srv_adaptor(0),
 			_active(false), _actor(a) {}
-		void actor(templet::actor*a) { assert(a == 0); _actor = a; }
+		void actor(templet::actor*a) { assert(_actor == 0); _actor = a; }
 		void send();
 		void bind(templet::actor*a, message_adaptor ma) {
 			_from_cli_to_srv = true; _srv_actor = a; _srv_adaptor = ma;
@@ -137,7 +135,7 @@ namespace templet{
 			}
 		}
 
-		bool graceful_shutdown() { return _stopped; }
+		bool stopped() { return _stopped; }
 
 	private:
 		mutex_mock _lock_1;
@@ -240,13 +238,12 @@ namespace templet{
 	class base_task: task {
 		friend class base_engine;
 	public:
-		base_task(actor*a,task_adaptor ta) :_actor(a), _tsk_adaptor(ta), _engine(0), _submitted(false) {}
+		base_task(actor*a,task_adaptor ta) :_actor(a), _tsk_adaptor(ta), _engine(0) {}
 		void engine(base_engine&e) { assert(_engine==0); _engine = &e; }
 		void submit();
 	protected:
 		virtual void run(){}
 	private:
-		bool         _submitted;
 		actor*       _actor;
 		base_engine* _engine;
 		task_adaptor _tsk_adaptor;
@@ -255,13 +252,11 @@ namespace templet{
 	class base_engine {
 		friend class base_task;
 	public:
-		void run(){
-			_task_queue.clear();
+		void wait_all(){
 			size_t rsize;
 			while ((rsize = _task_queue.size())) {
 				int n = rand() % rsize;	std::vector<base_task*>::iterator it = _task_queue.begin() + n;
 				base_task* tsk = *it; _task_queue.erase(it);
-				tsk->_submitted = false;
 				tsk->run();
 				(*tsk->_tsk_adaptor)(tsk->_actor, tsk);
 				tsk->_actor->resume();
@@ -271,5 +266,5 @@ namespace templet{
 		std::vector<base_task*> _task_queue;
 	};
 
-	void base_task::submit() { assert(_engine && !_submitted); _actor->suspend(); _engine->_task_queue.push_back(this); _submitted = true;  }
+	void base_task::submit() { _actor->suspend(); _engine->_task_queue.push_back(this); }
 }
