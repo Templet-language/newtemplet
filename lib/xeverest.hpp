@@ -56,6 +56,10 @@ namespace templet {
 		everest_task*  _task;
 	};
 
+	struct everest_error {
+		///////////////////////////////////
+	};
+
 	class everest_engine {
 		friend class everest_task;
 	public:
@@ -71,10 +75,16 @@ namespace templet {
 
 		~everest_engine() {	cleanup(); }
 		void free_access_token(){_pass.clear();}
-		bool ready() { return _is_ready; }
+		bool ready() { return _is_ready; }//---
 
-		bool wait_all();
-		bool wait_for(everest_task& t);
+		bool running(); /////////////
+		void run();//////////////////
+
+		bool error(everest_error*);//
+		void reset();////////////////
+
+		bool wait_all();//----------------
+		bool wait_for(everest_task&t);//--
 
 		bool print_app_description(const char* app_name);
 		bool get_access_token(string&t) {if(_is_ready){t=_access_token; return true;} else return false;}
@@ -85,8 +95,8 @@ namespace templet {
 
 	private:
 		bool submit(everest_task&t);
-		bool is_idle(everest_task&t);
-		bool is_done(everest_task&t);
+		bool is_idle(everest_task&t);//---
+		bool is_done(everest_task&t);//---
 
 	private:
 		inline bool _wait_loop_body(event&ev);
@@ -123,14 +133,11 @@ namespace templet {
 		bool engine(everest_engine&e) { if (_is_idle) { _eng = &e; return true; } return false; }
 		void deletable(bool del) { _deletable = del; }
 		
-		json& output() { return _output; }
-		void  input(json&in) { _input = in; }
+		bool  submit(json& in) { if (_actor)_actor->suspend(); _input = in; return _eng->submit(*this); }
+		json& result() { return _output; }
 
-		bool submit() { if(_actor)_actor->suspend(); return _eng->submit(*this); }
-		bool submit(json& in) { if (_actor)_actor->suspend(); _input = in; return _eng->submit(*this); }
-
-		bool idle() { return _is_idle; }
-		bool done() { return _is_done; }
+		bool idle() { return _is_idle; }//---------------
+		bool done() { return _is_done; }//---------------
 
 	private:
 		json   _input;
@@ -146,8 +153,8 @@ namespace templet {
 		bool _deletable;
 	};
 
-	bool everest_engine::is_idle(everest_task&t) { return t._is_idle; }
-	bool everest_engine::is_done(everest_task&t) { return t._is_done; }
+	bool everest_engine::is_idle(everest_task&t) { return t._is_idle; }//----
+	bool everest_engine::is_done(everest_task&t) { return t._is_done; }//----
 
 	bool everest_engine::init() {
 		curl_global_init(CURL_GLOBAL_ALL);

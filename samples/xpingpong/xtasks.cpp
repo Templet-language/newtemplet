@@ -5,10 +5,11 @@
 #include <xtemplet.hpp>
 #include <xeverest.hpp>
 #include <string>
+#include <iostream>
 
 class hello : public templet::message {
 public:
-	hello(templet::actor*a=0, templet::message_adaptor ma=0) :templet::message(a, ma) {}
+	hello(templet::actor*a, templet::message_adaptor ma) :templet::message(a, ma) {}
 	std::string str;
 };
 
@@ -39,11 +40,13 @@ struct ping :public templet::actor {
 
 	void start() {
 /*$TET$ping$start*/
+		p.send();
 /*$TET$*/
 	}
 
 	inline void on_p(hello&m) {
 /*$TET$ping$p*/
+		stop();
 /*$TET$*/
 	}
 
@@ -69,6 +72,8 @@ struct pong :public templet::actor {
 		t(this, &on_t_adapter)
 	{
 /*$TET$pong$pong*/
+		_p = 0;
+		t.app_id("app_id");
 /*$TET$*/
 	}
 
@@ -81,12 +86,25 @@ struct pong :public templet::actor {
 
 	inline void on_p(hello&m) {
 /*$TET$pong$p*/
+		_p = &m;
+
+		json in;
+		in["name"] = "echo-application";
+		in["inputs"]["input-string"] = m.str;
+
+		if (t.submit(in)) std::cout << "task submit succeeded" << std::endl;
+		else std::cout << "task submit failed" << std::endl;
 /*$TET$*/
 	}
 
 	inline void on_t(templet::everest_task&t) {
 /*$TET$pong$t*/
-		// error handling !!!
+		if (t.done()) {
+			json out = t.result();
+			_p->str =  out["output-string"];
+			_p->send();
+		}
+		else std::cout << "the task failed at the last check" << std::endl;
 /*$TET$*/
 	}
 
@@ -94,6 +112,7 @@ struct pong :public templet::actor {
 	templet::everest_task t;
 
 /*$TET$pong$$footer*/
+	hello* _p;
 /*$TET$*/
 };
 
@@ -108,13 +127,28 @@ int main()
 
 	a_pong.p(a_ping.p);
 
-	if (teng.ready()) {
-		eng.start();
-		if (teng.wait_all() && eng.stopped()) {
-			
-			return EXIT_SUCCESS;
-		}
+	a_ping.p.str = "Yoo-Hoo!";
+
+	eng.start();
+try_continue:
+	teng.run();
+
+	if (eng.stopped()) {
+		std::cout << "answer from remote Pong:" << std::endl;
+		std::cout << a_ping.p.str << std::endl;
+		return EXIT_SUCCESS;
 	}
+
+	templet::everest_error cntxt;
+
+	if (teng.error(&cntxt)) {
+		std::cout << "task engine failure..." << std::endl;
+		teng.reset();
+		goto try_continue;
+	}
+	else 
+		std::cout << "logical error" << std::endl;
+	
 	return EXIT_FAILURE;
 }
 /*$TET$*/

@@ -238,12 +238,13 @@ namespace templet{
 	class base_task: task {
 		friend class base_engine;
 	public:
-		base_task(actor*a,task_adaptor ta) :_actor(a), _tsk_adaptor(ta), _engine(0) {}
+		base_task(actor*a,task_adaptor ta) :_actor(a), _tsk_adaptor(ta), _engine(0), _active(false){}
 		void engine(base_engine&e) { assert(_engine==0); _engine = &e; }
 		void submit();
 	protected:
 		virtual void run(){}
 	private:
+		bool         _active;
 		actor*       _actor;
 		base_engine* _engine;
 		task_adaptor _tsk_adaptor;
@@ -252,19 +253,22 @@ namespace templet{
 	class base_engine {
 		friend class base_task;
 	public:
-		void wait_all(){
-			size_t rsize;
-			while ((rsize = _task_queue.size())) {
-				int n = rand() % rsize;	std::vector<base_task*>::iterator it = _task_queue.begin() + n;
-				base_task* tsk = *it; _task_queue.erase(it);
-				tsk->run();
-				(*tsk->_tsk_adaptor)(tsk->_actor, tsk);
-				tsk->_actor->resume();
-			}
+		bool running() {
+			size_t rsize = _task_queue.size();	int n = rand() % rsize;
+			std::vector<base_task*>::iterator it = _task_queue.begin() + n;
+			base_task* tsk = *it; _task_queue.erase(it);
+			
+			tsk->run();
+			(*tsk->_tsk_adaptor)(tsk->_actor, tsk);
+			tsk->_actor->resume();
+
+			tsk->_active = false;
+			return rsize > 1;
 		}
+		void run() { while (running());	}
 	private:
 		std::vector<base_task*> _task_queue;
 	};
 
-	void base_task::submit() { _actor->suspend(); _engine->_task_queue.push_back(this); }
+	void base_task::submit() { assert(!_active); _actor->suspend(); _engine->_task_queue.push_back(this); _active = true; }
 }

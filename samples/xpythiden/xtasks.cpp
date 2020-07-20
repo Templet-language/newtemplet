@@ -226,7 +226,7 @@ int main()
 	a_master.x = (double)rand();
 
 	e.start();
-	te.wait_all();
+	te.run();
 
 	if (e.stopped()) {
 		std::cout << "sin2(" << a_master.x << ") + cos2(" << a_master.x << ") = " << a_master.sin2x_and_cos2x << std::endl;
