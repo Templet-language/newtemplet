@@ -99,12 +99,9 @@ struct pong :public templet::actor {
 
 	inline void on_t(templet::everest_task&t) {
 /*$TET$pong$t*/
-		if (t.done()) {
-			json out = t.result();
-			_p->str =  out["output-string"];
-			_p->send();
-		}
-		else std::cout << "the task failed at the last check" << std::endl;
+		json out = t.result();
+		_p->str =  out["output-string"];
+		_p->send();
 /*$TET$*/
 	}
 
@@ -122,6 +119,11 @@ int main()
 	templet::engine eng;
 	templet::everest_engine teng("access_token");
 
+	if (!teng) {
+		std::cout << "task engine is not connected to the Everest server..." << std::endl;
+		return EXIT_FAILURE;
+	}
+
 	ping a_ping(eng);
 	pong a_pong(eng, teng);
 
@@ -130,6 +132,7 @@ int main()
 	a_ping.p.str = "Yoo-Hoo!";
 
 	eng.start();
+
 try_continue:
 	teng.run();
 
@@ -139,12 +142,17 @@ try_continue:
 		return EXIT_SUCCESS;
 	}
 
+	static int tries = 1;
 	templet::everest_error cntxt;
 
 	if (teng.error(&cntxt)) {
 		std::cout << "task engine failure..." << std::endl;
-		teng.reset();
-		goto try_continue;
+		if (tries) {
+			tries--;
+			// try to fix an error
+			teng.reset();
+			goto try_continue;
+		}
 	}
 	else 
 		std::cout << "logical error" << std::endl;

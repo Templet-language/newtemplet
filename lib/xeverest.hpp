@@ -57,37 +57,36 @@ namespace templet {
 	};
 
 	struct everest_error {
-		///////////////////////////////////
+		////////////////////////////
+		enum type { NOT_ERROR, NOT_CONNECTED };
+		type _type;
 	};
 
 	class everest_engine {
 		friend class everest_task;
 	public:
 		everest_engine(const char*login, const char*pass, const char* label=0) {
-			_login = login; _pass = pass; _curl = NULL; _recount = 0;
+			_login = login; _pass = pass; _curl = NULL; _recount = 0; _error_type = everest_error::NOT_ERROR;
 			if (label)_label = label; else _label = "templet-session";
-			_is_ready = init();
+			_connected = init();
 		}
 		everest_engine(const char* access_token) {
-			_curl = NULL; _recount = 0; _access_token = access_token;
-			_is_ready = init();
+			_curl = NULL; _recount = 0; _access_token = access_token; _error_type = everest_error::NOT_ERROR;
+			_connected = init();
 		}
-
 		~everest_engine() {	cleanup(); }
-		void free_access_token(){_pass.clear();}
-		bool ready() { return _is_ready; }//---
 
-		bool running(); /////////////
-		void run();//////////////////
+		operator void*() const { return (_connected?(void*)1:(void*)0); }
 
-		bool error(everest_error*);//
-		void reset();////////////////
+		void run() { while(running())std::this_thread::sleep_for(DELAY); };
+		bool running();
 
-		bool wait_all();//----------------
-		bool wait_for(everest_task&t);//--
+		bool error(everest_error*);
+		void reset();
 
 		bool print_app_description(const char* app_name);
-		bool get_access_token(string&t) {if(_is_ready){t=_access_token; return true;} else return false;}
+		bool get_access_token(string&t) {if(_connected){t=_access_token; return true;} else return false;}
+		void save_access_token(){_pass.clear();}
 
 		bool upload(const string& file, string& uri);
 		bool download(const string& file, const string& uri);
@@ -95,10 +94,6 @@ namespace templet {
 
 	private:
 		bool submit(everest_task&t);
-		bool is_idle(everest_task&t);//---
-		bool is_done(everest_task&t);//---
-
-	private:
 		inline bool _wait_loop_body(event&ev);
 		inline bool init();
 		inline void cleanup();
@@ -108,8 +103,10 @@ namespace templet {
 		string _pass;
 		string _label;
 		string _access_token;
-		bool   _is_ready;
 		int    _recount;
+		
+		bool   _connected;
+		everest_error::type _error_type;
 
 		curl_slist* _common_headers;
 		curl_slist* _upload_headers;
@@ -125,19 +122,16 @@ namespace templet {
 		friend	class everest_engine;
 	public:
 		everest_task(everest_engine&e, const char* app_id=0) :
-			_eng(&e), _actor(0), _tsk_adaptor(0), _is_idle(true), _is_done(false), _app_ID(app_id), _deletable(false) {}
-		everest_task(actor*a, task_adaptor ta) : _actor(a), _tsk_adaptor(ta), _eng(0), _is_idle(true), _is_done(false),  _app_ID(""), _deletable(false) {}
-		everest_task() : _actor(0), _tsk_adaptor(0), _eng(0), _is_idle(true), _is_done(false), _app_ID(""), _deletable(false) {}
+			_eng(&e), _actor(0), _tsk_adaptor(0), _idle(true), _done(false), _app_ID(app_id), _deletable(false) {}
+		everest_task(actor*a, task_adaptor ta) : _actor(a), _tsk_adaptor(ta), _eng(0), _idle(true), _done(false),  _app_ID(""), _deletable(false) {}
+		everest_task() : _actor(0), _tsk_adaptor(0), _eng(0), _idle(true), _done(false), _app_ID(""), _deletable(false) {}
 
-		bool app_id(const char*id) { if (_is_idle) { _app_ID = id; return true; } return false; }
-		bool engine(everest_engine&e) { if (_is_idle) { _eng = &e; return true; } return false; }
+		bool app_id(const char*id) { if (_idle) { _app_ID = id; return true; } return false; }
+		bool engine(everest_engine&e) { if (_idle) { _eng = &e; return true; } return false; }
 		void deletable(bool del) { _deletable = del; }
 		
 		bool  submit(json& in) { if (_actor)_actor->suspend(); _input = in; return _eng->submit(*this); }
 		json& result() { return _output; }
-
-		bool idle() { return _is_idle; }//---------------
-		bool done() { return _is_done; }//---------------
 
 	private:
 		json   _input;
@@ -148,13 +142,10 @@ namespace templet {
 		actor*         _actor;
 		everest_engine*_eng;
 		
-		bool _is_idle;
-		bool _is_done;
+		bool _idle;
+		bool _done;
 		bool _deletable;
 	};
-
-	bool everest_engine::is_idle(everest_task&t) { return t._is_idle; }//----
-	bool everest_engine::is_done(everest_task&t) { return t._is_done; }//----
 
 	bool everest_engine::init() {
 		curl_global_init(CURL_GLOBAL_ALL);
@@ -364,11 +355,26 @@ namespace templet {
 
 		return _code == 200;
 	}
+	
+	bool everest_engine::error(everest_error*)
+	{
+		//////////////////////////////////////
+		return false;
+	}
+
+	void everest_engine::reset()
+	{
+		//////////////////////////////////////
+		_error_type = everest_error::NOT_ERROR;
+	}
 
 	bool everest_engine::submit(everest_task&t) {
-		if (!_curl) return false;
+		if (!_curl || !_connected) {
+			_error_type = everest_error::NOT_CONNECTED;
+			return false;
+		}
 
-		assert(t._eng == this && t.idle());
+		assert(t._eng == this && t._idle);
 
 		string link = EVEREST_URL;
 		string post;
@@ -396,55 +402,35 @@ namespace templet {
 	
 			_submitted.push_back(ev);
 
-			t._is_idle = false;
-			t._is_done = false;
+			t._idle = false;
+			t._done = false;
 
 			return true;
 		}
 
-		t._is_idle = true;
-		t._is_done = false;
+		t._idle = true;
+		t._done = false;
 
 		return false;
 	}
-	
-	bool everest_engine::wait_all() {
+
+	bool everest_engine::running() {
 		assert(++_recount == 1);
+		std::list<event>::iterator it = _submitted.begin();
 
-		while (!_submitted.empty()) {
-			std::list<event>::iterator it = _submitted.begin();
-
-			while (it != _submitted.end()) {
-				event& ev = *it;
-				if (!_wait_loop_body(ev)) { assert(--_recount == 0); return false; }
-				if (ev._task->idle()) {
-					everest_task* tsk = ev._task;
-					(*tsk->_tsk_adaptor)(tsk->_actor, tsk);
-					tsk->_actor->resume(); 
-					it = _submitted.erase(it); 
-				}	else it++;
+		while (it != _submitted.end()) {
+			event& ev = *it;
+			if (!_wait_loop_body(ev)) { assert(--_recount == 0); return false; }
+			if (ev._task->_idle) {
+				everest_task* tsk = ev._task;
+				(*tsk->_tsk_adaptor)(tsk->_actor, tsk);
+				tsk->_actor->resume();
+				it = _submitted.erase(it);
 			}
-			std::this_thread::sleep_for(DELAY);
+			else it++;
 		}
 		assert(--_recount == 0);
-		return true;
-	}
-
-	bool everest_engine::wait_for(everest_task& t) {
-		assert(++_recount == 1);
-
-		while (!t.idle()) {
-			std::list<event>::iterator it = _submitted.begin();
-
-			while (it != _submitted.end()) {
-				event& ev = *it;
-				if (!_wait_loop_body(ev)) { assert(--_recount == 0); return false; }
-				if (ev._task->idle()) { it = _submitted.erase(it); } else it++;
-			}
-			std::this_thread::sleep_for(DELAY);
-		}
-		assert(--_recount == 0);
-		return true;
+		return !_submitted.empty();
 	}
 
 	bool everest_engine::_wait_loop_body(event&ev) {
@@ -477,14 +463,14 @@ namespace templet {
 					curl_easy_perform(_curl);
 				}
 
-				ev._task->_is_done = true;
-				ev._task->_is_idle = true;
+				ev._task->_done = true;
+				ev._task->_idle = true;
 			}
 			else if (ev._state == "FAILED " || ev._state == "CANCELLED") {
 				ev._task->_output = j["info"];
 
-				ev._task->_is_done = false;
-				ev._task->_is_idle = true;
+				ev._task->_done = false;
+				ev._task->_idle = true;
 			}
 			
 			return true;
