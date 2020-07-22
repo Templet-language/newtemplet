@@ -57,9 +57,12 @@ namespace templet {
 	};
 
 	struct everest_error {
-		////////////////////////////
-		enum type { NOT_ERROR, NOT_CONNECTED };
-		type _type;
+		enum type { NOT_ERROR=0, NOT_CONNECTED=1, SUBMIT_FAILED=2, TASK_CHECK_FAILED=3, TASK_FAILED_OR_CANCELLED=4 };
+		type* _type; // can be set to NOT_ERROR if TASK_CHECK_FAILED
+		long  _code;
+		string _response;
+		string _task_input;
+		everest_task*_task;
 	};
 
 	class everest_engine {
@@ -81,8 +84,7 @@ namespace templet {
 		void run() { while(running())std::this_thread::sleep_for(DELAY); };
 		bool running();
 
-		bool error(everest_error*);
-		void reset();
+		bool error(everest_error*e=0);
 
 		bool print_app_description(const char* app_name);
 		bool get_access_token(string&t) {if(_connected){t=_access_token; return true;} else return false;}
@@ -107,6 +109,7 @@ namespace templet {
 		
 		bool   _connected;
 		everest_error::type _error_type;
+		everest_task*       _error_task;
 
 		curl_slist* _common_headers;
 		curl_slist* _upload_headers;
@@ -130,8 +133,16 @@ namespace templet {
 		bool engine(everest_engine&e) { if (_idle) { _eng = &e; return true; } return false; }
 		void deletable(bool del) { _deletable = del; }
 		
-		bool  submit(json& in) { if (_actor)_actor->suspend(); _input = in; return _eng->submit(*this); }
-		json& result() { return _output; }
+		bool submit(json& in) {
+			assert(_eng->_error_type == everest_error::NOT_ERROR);
+			_input = in; if (_actor)_actor->suspend(); return _eng->submit(*this);
+		}
+		bool resubmit(json& in) {
+			assert(_eng->_error_type != everest_error::NOT_ERROR);
+			_eng->_error_type = everest_error::NOT_ERROR;
+			_input = in; return _eng->submit(*this);
+		}
+		json& result() { assert(_done); return _output; }
 
 	private:
 		json   _input;
@@ -356,16 +367,15 @@ namespace templet {
 		return _code == 200;
 	}
 	
-	bool everest_engine::error(everest_error*)
+	bool everest_engine::error(everest_error*e)
 	{
-		//////////////////////////////////////
-		return false;
-	}
+		e->_type = &_error_type;
+		e->_code = _code;
+		e->_response = _response;
+		e->_task = _error_task;
+		e->_task_input = (_error_task->_input).dump();
 
-	void everest_engine::reset()
-	{
-		//////////////////////////////////////
-		_error_type = everest_error::NOT_ERROR;
+		return _error_type != everest_error::NOT_ERROR;
 	}
 
 	bool everest_engine::submit(everest_task&t) {
@@ -411,6 +421,9 @@ namespace templet {
 		t._idle = true;
 		t._done = false;
 
+		_error_type = everest_error::SUBMIT_FAILED;
+		_error_task = &t;
+
 		return false;
 	}
 
@@ -420,11 +433,24 @@ namespace templet {
 
 		while (it != _submitted.end()) {
 			event& ev = *it;
+			
 			if (!_wait_loop_body(ev)) { assert(--_recount == 0); return false; }
+			
 			if (ev._task->_idle) {
 				everest_task* tsk = ev._task;
-				(*tsk->_tsk_adaptor)(tsk->_actor, tsk);
-				tsk->_actor->resume();
+
+				if (ev._task->_done) {
+					if (tsk->_actor) {
+						(*tsk->_tsk_adaptor)(tsk->_actor, tsk);
+						tsk->_actor->resume();
+					}
+				}
+				else {
+					_error_type = everest_error::TASK_FAILED_OR_CANCELLED;
+					_error_task = tsk;
+					return false;
+				}
+				
 				it = _submitted.erase(it);
 			}
 			else it++;
@@ -434,7 +460,12 @@ namespace templet {
 	}
 
 	bool everest_engine::_wait_loop_body(event&ev) {
-		if (!_curl) return false;
+		if (_error_type != everest_error::NOT_ERROR) return false;
+
+		if (!_curl || !_connected) {
+			_error_type = everest_error::NOT_CONNECTED;
+			return false;
+		}
 
 		string link = EVEREST_URL;
 		link += "/api/jobs/";
@@ -475,6 +506,10 @@ namespace templet {
 			
 			return true;
 		}
+
+		_error_type = everest_error::TASK_CHECK_FAILED;
+		_error_task = ev._task;
+
 		return false;
 	}
 }

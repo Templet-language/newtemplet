@@ -139,18 +139,58 @@ try_continue:
 	if (eng.stopped()) {
 		std::cout << "answer from remote Pong:" << std::endl;
 		std::cout << a_ping.p.str << std::endl;
+
 		return EXIT_SUCCESS;
 	}
 
-	static int tries = 1;
+	static int recovery_tries = 1;
 	templet::everest_error cntxt;
 
 	if (teng.error(&cntxt)) {
-		std::cout << "task engine failure..." << std::endl;
-		if (tries) {
-			tries--;
-			// try to fix an error
-			teng.reset();
+		std::cout << "...task engine error..." << std::endl;
+
+		if (recovery_tries--) {
+			std::cout << "error information:" << std::endl;
+
+			std::cout << "type ID : " << cntxt._type << std::endl;
+			std::cout << "HTML response code : " << cntxt._code << std::endl;
+			std::cout << "HTML response : " << cntxt._response << std::endl;
+			std::cout << "task input : " << cntxt._task_input << std::endl;
+
+			// trying to fix an error
+			switch (*cntxt._type) {
+				case templet::everest_error::NOT_CONNECTED:
+				{
+					std::cout << "error string : NOT_CONNECTED" << std::endl;
+					std::cout << "the task engine is not initialized properly -- fatal error, exiting" << std::endl;
+					return EXIT_FAILURE;
+				}
+				case templet::everest_error::SUBMIT_FAILED:
+				{
+					std::cout << "error string : SUBMIT_FAILED" << std::endl;
+					std::cout << "resubmitting the task" << std::endl;
+					json input = json::parse(cntxt._task_input);
+					// here you may fix something in the input 
+					cntxt._task->resubmit(input);
+					break;
+				}
+				case templet::everest_error::TASK_CHECK_FAILED:
+				{
+					std::cout << "error string : TASK_CHECK_FAILED" << std::endl;
+					std::cout << "trying to check the task status again" << std::endl;
+					*cntxt._type = templet::everest_error::NOT_ERROR;
+					break;
+				}
+				case templet::everest_error::TASK_FAILED_OR_CANCELLED:
+				{
+					std::cout << "error string : TASK_FAILED_OR_CANCELLED" << std::endl;
+					std::cout << "resubmitting the task" << std::endl;
+					json input = json::parse(cntxt._task_input);
+					// here you may fix something in the input 
+					cntxt._task->resubmit(input);
+				}
+			}
+	
 			goto try_continue;
 		}
 	}
