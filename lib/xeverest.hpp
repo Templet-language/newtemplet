@@ -434,7 +434,10 @@ namespace templet {
 		while (it != _submitted.end()) {
 			event& ev = *it;
 			
-			if (!_wait_loop_body(ev)) { assert(--_recount == 0); return false; }
+			if (!_wait_loop_body(ev)) { 
+				assert(--_recount == 0); 
+				return false; 
+			}
 			
 			if (ev._task->_idle) {
 				everest_task* tsk = ev._task;
@@ -448,6 +451,8 @@ namespace templet {
 				else {
 					_error_type = everest_error::TASK_FAILED_OR_CANCELLED;
 					_error_task = tsk;
+					_submitted.erase(it);
+					assert(--_recount == 0);
 					return false;
 				}
 				

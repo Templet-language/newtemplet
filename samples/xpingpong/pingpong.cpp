@@ -1,4 +1,19 @@
 /*$TET$$header*/
+/*--------------------------------------------------------------------------*/
+/*  Copyright 2020 Sergei Vostokin                                          */
+/*                                                                          */
+/*  Licensed under the Apache License, Version 2.0 (the "License");         */
+/*  you may not use this file except in compliance with the License.        */
+/*  You may obtain a copy of the License at                                 */
+/*                                                                          */
+/*  http://www.apache.org/licenses/LICENSE-2.0                              */
+/*                                                                          */
+/*  Unless required by applicable law or agreed to in writing, software     */
+/*  distributed under the License is distributed on an "AS IS" BASIS,       */
+/*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.*/
+/*  See the License for the specific language governing permissions and     */
+/*  limitations under the License.                                          */
+/*--------------------------------------------------------------------------*/
 
 #define _CRT_SECURE_NO_DEPRECATE
 
@@ -73,7 +88,7 @@ struct pong :public templet::actor {
 	{
 /*$TET$pong$pong*/
 		_p = 0;
-		t.app_id("app_id");
+		t.app_id("app-ID");
 /*$TET$*/
 	}
 
@@ -117,7 +132,19 @@ struct pong :public templet::actor {
 int main()
 {
 	templet::engine eng;
-	templet::everest_engine teng("access_token");
+	templet::everest_engine teng("access-token");
+	
+	//--- for getting access token and app ID use the following code ---
+	//templet::everest_engine teng("your-Everest-login","your-password");
+	//teng.save_access_token();
+
+	//if (teng) {
+	//	teng.print_app_description("application-name");
+	//	string token;
+	//	teng.get_access_token(token);
+	//	std::cout << "\n" << token << "\n";
+	//  return EXIT_SUCCESS;
+	//}
 
 	if (!teng) {
 		std::cout << "task engine is not connected to the Everest server..." << std::endl;
@@ -143,7 +170,7 @@ try_continue:
 		return EXIT_SUCCESS;
 	}
 
-	static int recovery_tries = 1;
+	static int recovery_tries = 3;
 	templet::everest_error cntxt;
 
 	if (teng.error(&cntxt)) {
@@ -152,7 +179,7 @@ try_continue:
 		if (recovery_tries--) {
 			std::cout << "error information:" << std::endl;
 
-			std::cout << "type ID : " << cntxt._type << std::endl;
+			std::cout << "type ID : " << *cntxt._type << std::endl;
 			std::cout << "HTML response code : " << cntxt._code << std::endl;
 			std::cout << "HTML response : " << cntxt._response << std::endl;
 			std::cout << "task input : " << cntxt._task_input << std::endl;
