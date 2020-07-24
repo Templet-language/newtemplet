@@ -1,5 +1,5 @@
 /*--------------------------------------------------------------------------*/
-/*  Copyright 2020 Sergei Vostokin                                     */
+/*  Copyright 2020 Sergei Vostokin                                          */
 /*                                                                          */
 /*  Licensed under the Apache License, Version 2.0 (the "License");         */
 /*  you may not use this file except in compliance with the License.        */
@@ -167,4 +167,21 @@ struct actor_type :public templet::actor {
 	}
 	task_type a_task;
 		// add your code
-}; 		 
+}; 
+
+/// task engines code names (used instead of "base" in 5 and 6) ///
+Implemented task engines:
+-- base    (in xtemplet.hpp)
+-- everest (in xeverest.hpp)
+Projected task engines:
+-- basesym
+-- deepsym
+-- checker
+-- omptask
+-- cpptask
+-- mpitask
+-- curltsk
+-- boinctk
+-- condort
+
+		 
