@@ -254,16 +254,20 @@ namespace templet{
 		friend class base_task;
 	public:
 		bool running() {
-			size_t rsize = _task_queue.size();	int n = rand() % rsize;
-			std::vector<base_task*>::iterator it = _task_queue.begin() + n;
-			base_task* tsk = *it; _task_queue.erase(it);
+			size_t rsize = _task_queue.size();	
+			if (rsize) {
+				int n = rand() % rsize;
+				std::vector<base_task*>::iterator it = _task_queue.begin() + n;
+				base_task* tsk = *it; _task_queue.erase(it);
 
-			tsk->run();
-			(*tsk->_tsk_adaptor)(tsk->_actor, tsk);
-			tsk->_actor->resume();
+				tsk->run();
+				(*tsk->_tsk_adaptor)(tsk->_actor, tsk);
+				tsk->_actor->resume();
 
-			tsk->_idle = true;
-			return rsize > 1;
+				tsk->_idle = true;
+				return true;
+			}
+			return false;
 		}
 		void run() { while (running());	}
 	private:
