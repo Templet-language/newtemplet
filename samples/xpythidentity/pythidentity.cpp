@@ -1,16 +1,14 @@
 /*$TET$$header*/
 
-#define TEMPLET_OMP_SYNC
-
 #include <xtemplet.hpp>
 #include <cmath>
 #include <iostream>
 #include <ctime>
 
-//templet.hpp
+//---implemented engines---
 //everest.hpp
-/////////////
-//simpsym.hpp
+//---projected engines---
+//easysym.hpp
 //deepsym.hpp
 //checker.hpp
 //omptask.hpp
@@ -209,14 +207,14 @@ struct sworker :public templet::actor {
 
 int main()
 {
-	templet::engine e;
-	templet::base_engine te;
+	templet::engine eng;
+	templet::base_engine teng;
 
-	master  a_master(e);
-	cworker a_cos_worker(e, te);
+	master  a_master(eng);
+	cworker a_cos_worker(eng, teng);
 	sworker a_sin_worker[1];
 
-	a_sin_worker[0].engines(e, te);
+	a_sin_worker[0].engines(eng, teng);
 
 	a_cos_worker.cw(a_master._cw);
 	a_sin_worker[0].sw(a_master.sw);
@@ -225,10 +223,10 @@ int main()
 	srand((unsigned)time(0));
 	a_master.x = (double)rand();
 
-	e.start();
-	te.run();
+	eng.start();
+	teng.run();
 
-	if (e.stopped()) {
+	if (eng.stopped()) {
 		std::cout << "sin2(" << a_master.x << ") + cos2(" << a_master.x << ") = " << a_master.sin2x_and_cos2x << std::endl;
 		return EXIT_SUCCESS;
 	}
