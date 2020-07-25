@@ -47,9 +47,9 @@ int main()
 	if (eng.stopped()) {
 		std::cout << "Success!!!" << std::endl;
 		
-		std::cout << "Maximum number of tasks executed in parallel: " << teng.Pmax() << std::endl;
-		std::cout << "Time of sequential execution of all tasks   : " << teng.T1() << std::endl;
-		std::cout << "Time of parallel execution of all tasks     : " << teng.Tp() << std::endl;
+		std::cout << "Maximum number of tasks executed in parallel : " << teng.Pmax() << std::endl;
+		std::cout << "Time of sequential execution of all tasks    : " << teng.T1() << std::endl;
+		std::cout << "Time of parallel   execution of all tasks    : " << teng.Tp() << std::endl;
 		
 		return EXIT_SUCCESS;
 	}
