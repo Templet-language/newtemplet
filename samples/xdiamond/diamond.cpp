@@ -20,12 +20,23 @@
 int main()
 {
 	engine eng;
-	base_engine teng;
+	basesim_engine teng;
+
+	//     A(1)     |
+	//    /    \    |
+	//  B(2)  C(3)  |
+	//    \    /    |
+	//     D(4)     V
 
 	A a(eng,teng);
 	B b(eng,teng);
 	C c(eng,teng);
 	D d(eng,teng);
+
+	a.delay = 1.0;
+	b.delay = 2.0;
+	c.delay = 3.0;
+	d.delay = 4.0;
 
 	b.a(a.b); c.a(a.c);
 	d.b(b.d); d.c(c.d);
@@ -34,10 +45,15 @@ int main()
 	teng.run();
 
 	if (eng.stopped()) {
-		std::cout << "success!!!" << std::endl;
+		std::cout << "Success!!!" << std::endl;
+		
+		std::cout << "Maximum number of tasks executed in parallel: " << teng.Pmax() << std::endl;
+		std::cout << "Time of sequential execution of all tasks   : " << teng.T1() << std::endl;
+		std::cout << "Time of parallel execution of all tasks     : " << teng.Tp() << std::endl;
+		
 		return EXIT_SUCCESS;
 	}
 
-	std::cout << "failure..." << std::endl;
+	std::cout << "Failure..." << std::endl;
 	return EXIT_FAILURE;
 }

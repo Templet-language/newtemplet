@@ -17,10 +17,11 @@
 
 #pragma once
 #include <xtemplet.hpp>
+#include <xbasesim.hpp>
 using namespace templet;
 /*$TET$*/
 
-#pragma templet !A(b!message,c!message,t:base)
+#pragma templet !A(b!message,c!message,t:basesim)
 
 struct A :public templet::actor {
 	static void on_b_adapter(templet::actor*a, templet::message*m) {
@@ -28,10 +29,10 @@ struct A :public templet::actor {
 	static void on_c_adapter(templet::actor*a, templet::message*m) {
 		((A*)a)->on_c(*(message*)m);}
 	static void on_t_adapter(templet::actor*a, templet::task*t) {
-		((A*)a)->on_t(*(templet::base_task*)t);}
+		((A*)a)->on_t(*(templet::basesim_task*)t);}
 
-	A(templet::engine&e,templet::base_engine&te_base) :A() {
-		A::engines(e,te_base);
+	A(templet::engine&e,templet::basesim_engine&te_basesim) :A() {
+		A::engines(e,te_basesim);
 	}
 
 	A() :templet::actor(true),
@@ -43,9 +44,9 @@ struct A :public templet::actor {
 /*$TET$*/
 	}
 
-	void engines(templet::engine&e,templet::base_engine&te_base) {
+	void engines(templet::engine&e,templet::basesim_engine&te_basesim) {
 		templet::actor::engine(e);
-		t.engine(te_base);
+		t.engine(te_basesim);
 /*$TET$A$engines*/
 /*$TET$*/
 	}
@@ -66,21 +67,23 @@ struct A :public templet::actor {
 /*$TET$*/
 	}
 
-	inline void on_t(templet::base_task&t) {
+	inline void on_t(templet::basesim_task&t) {
 /*$TET$A$t*/
+		t.delay(delay);
 		b.send(); c.send();
 /*$TET$*/
 	}
 
 	message b;
 	message c;
-	templet::base_task t;
+	templet::basesim_task t;
 
 /*$TET$A$$footer*/
+	double delay;
 /*$TET$*/
 };
 
-#pragma templet B(a?message,d!message,t:base)
+#pragma templet B(a?message,d!message,t:basesim)
 
 struct B :public templet::actor {
 	static void on_a_adapter(templet::actor*a, templet::message*m) {
@@ -88,10 +91,10 @@ struct B :public templet::actor {
 	static void on_d_adapter(templet::actor*a, templet::message*m) {
 		((B*)a)->on_d(*(message*)m);}
 	static void on_t_adapter(templet::actor*a, templet::task*t) {
-		((B*)a)->on_t(*(templet::base_task*)t);}
+		((B*)a)->on_t(*(templet::basesim_task*)t);}
 
-	B(templet::engine&e,templet::base_engine&te_base) :B() {
-		B::engines(e,te_base);
+	B(templet::engine&e,templet::basesim_engine&te_basesim) :B() {
+		B::engines(e,te_basesim);
 	}
 
 	B() :templet::actor(false),
@@ -102,9 +105,9 @@ struct B :public templet::actor {
 /*$TET$*/
 	}
 
-	void engines(templet::engine&e,templet::base_engine&te_base) {
+	void engines(templet::engine&e,templet::basesim_engine&te_basesim) {
 		templet::actor::engine(e);
-		t.engine(te_base);
+		t.engine(te_basesim);
 /*$TET$B$engines*/
 /*$TET$*/
 	}
@@ -120,21 +123,23 @@ struct B :public templet::actor {
 /*$TET$*/
 	}
 
-	inline void on_t(templet::base_task&t) {
+	inline void on_t(templet::basesim_task&t) {
 /*$TET$B$t*/
+		t.delay(delay);
 		d.send();
 /*$TET$*/
 	}
 
 	void a(message&m) { m.bind(this, &on_a_adapter); }
 	message d;
-	templet::base_task t;
+	templet::basesim_task t;
 
 /*$TET$B$$footer*/
+	double delay;
 /*$TET$*/
 };
 
-#pragma templet C(a?message,d!message,t:base)
+#pragma templet C(a?message,d!message,t:basesim)
 
 struct C :public templet::actor {
 	static void on_a_adapter(templet::actor*a, templet::message*m) {
@@ -142,10 +147,10 @@ struct C :public templet::actor {
 	static void on_d_adapter(templet::actor*a, templet::message*m) {
 		((C*)a)->on_d(*(message*)m);}
 	static void on_t_adapter(templet::actor*a, templet::task*t) {
-		((C*)a)->on_t(*(templet::base_task*)t);}
+		((C*)a)->on_t(*(templet::basesim_task*)t);}
 
-	C(templet::engine&e,templet::base_engine&te_base) :C() {
-		C::engines(e,te_base);
+	C(templet::engine&e,templet::basesim_engine&te_basesim) :C() {
+		C::engines(e,te_basesim);
 	}
 
 	C() :templet::actor(false),
@@ -156,9 +161,9 @@ struct C :public templet::actor {
 /*$TET$*/
 	}
 
-	void engines(templet::engine&e,templet::base_engine&te_base) {
+	void engines(templet::engine&e,templet::basesim_engine&te_basesim) {
 		templet::actor::engine(e);
-		t.engine(te_base);
+		t.engine(te_basesim);
 /*$TET$C$engines*/
 /*$TET$*/
 	}
@@ -174,21 +179,23 @@ struct C :public templet::actor {
 /*$TET$*/
 	}
 
-	inline void on_t(templet::base_task&t) {
+	inline void on_t(templet::basesim_task&t) {
 /*$TET$C$t*/
+		t.delay(delay);
 		d.send();
 /*$TET$*/
 	}
 
 	void a(message&m) { m.bind(this, &on_a_adapter); }
 	message d;
-	templet::base_task t;
+	templet::basesim_task t;
 
 /*$TET$C$$footer*/
+	double delay;
 /*$TET$*/
 };
 
-#pragma templet D(b?message,c?message,t:base)
+#pragma templet D(b?message,c?message,t:basesim)
 
 struct D :public templet::actor {
 	static void on_b_adapter(templet::actor*a, templet::message*m) {
@@ -196,10 +203,10 @@ struct D :public templet::actor {
 	static void on_c_adapter(templet::actor*a, templet::message*m) {
 		((D*)a)->on_c(*(message*)m);}
 	static void on_t_adapter(templet::actor*a, templet::task*t) {
-		((D*)a)->on_t(*(templet::base_task*)t);}
+		((D*)a)->on_t(*(templet::basesim_task*)t);}
 
-	D(templet::engine&e,templet::base_engine&te_base) :D() {
-		D::engines(e,te_base);
+	D(templet::engine&e,templet::basesim_engine&te_basesim) :D() {
+		D::engines(e,te_basesim);
 	}
 
 	D() :templet::actor(false),
@@ -210,9 +217,9 @@ struct D :public templet::actor {
 /*$TET$*/
 	}
 
-	void engines(templet::engine&e,templet::base_engine&te_base) {
+	void engines(templet::engine&e,templet::basesim_engine&te_basesim) {
 		templet::actor::engine(e);
-		t.engine(te_base);
+		t.engine(te_basesim);
 /*$TET$D$engines*/
 /*$TET$*/
 	}
@@ -229,19 +236,21 @@ struct D :public templet::actor {
 /*$TET$*/
 	}
 
-	inline void on_t(templet::base_task&t) {
+	inline void on_t(templet::basesim_task&t) {
 /*$TET$D$t*/
+		t.delay(delay);
 		stop();
 /*$TET$*/
 	}
 
 	void b(message&m) { m.bind(this, &on_b_adapter); }
 	void c(message&m) { m.bind(this, &on_c_adapter); }
-	templet::base_task t;
+	templet::basesim_task t;
 
 /*$TET$D$$footer*/
 	message *_c;
 	message *_b;
+	double delay;
 	void on_b_and_c(){ if(access(_c) && access(_b)) t.submit(); }
 /*$TET$*/
 };
